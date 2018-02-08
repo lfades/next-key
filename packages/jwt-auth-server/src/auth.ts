@@ -2,11 +2,11 @@ import { StringAnyMap } from './interfaces';
 import AuthPayload from './payload';
 import AuthScope from './scope';
 
-interface AuthToken<I> {
+export interface AuthToken<I> {
   new (Auth: AuthServer): I;
 }
 
-export interface AccessTokenInterface {
+export interface IAccessToken {
   Auth: AuthServer;
   cookie: string;
   expireAfter: number;
@@ -16,7 +16,7 @@ export interface AccessTokenInterface {
   verify(accessToken: string): StringAnyMap;
 }
 
-export interface RefreshTokenInterface {
+export interface IRefreshToken {
   Auth: AuthServer;
   cookie: string;
   expireAfter: number;
@@ -28,8 +28,8 @@ export interface RefreshTokenInterface {
 
 export default class AuthServer {
   public secure: boolean;
-  public at: AccessTokenInterface;
-  public rt: RefreshTokenInterface;
+  public at: IAccessToken;
+  public rt: IRefreshToken;
   public accessTokenCookie: string;
   public refreshTokenCookie: string;
   public payload: AuthPayload;
@@ -42,8 +42,8 @@ export default class AuthServer {
     payload,
     scope
   }: {
-    AccessToken: AuthToken<AccessTokenInterface>;
-    RefreshToken: AuthToken<RefreshTokenInterface>;
+    AccessToken: AuthToken<IAccessToken>;
+    RefreshToken: AuthToken<IRefreshToken>;
     payload: AuthPayload;
     scope?: AuthScope;
     secure?: boolean;

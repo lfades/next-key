@@ -1,6 +1,6 @@
-import { AuthScopeInterface, StringStringMap } from './interfaces';
+import { IAuthScope, StringStringMap } from './interfaces';
 
-export default class AuthScope implements AuthScopeInterface {
+export default class AuthScope implements IAuthScope {
   private SCOPE: StringStringMap;
   private REVERSE_SCOPE: StringStringMap;
 

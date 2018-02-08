@@ -1,19 +1,30 @@
 {
   "defaultSeverity": "error",
   "extends": [
-      "tslint:latest",
-      "tslint-eslint-rules",
-      "tslint-config-prettier"
+    "tslint:latest",
+    "tslint-eslint-rules",
+    "tslint-config-prettier"
   ],
   "rulesDirectory": [
     "tslint-plugin-prettier"
   ],
   "rules": {
-    "prettier": [true, { "singleQuote": true }],
-    "interface-name": [true, "never-prefix"],
-    "curly": [true, "ignore-same-line"],
+    "prettier": [
+      true,
+      {
+        "singleQuote": true
+      }
+    ],
+    "curly": [
+      true,
+      "ignore-same-line"
+    ],
+    "interface-name": false,
     "array-type": false,
-    "object-literal-sort-keys": false
+    "object-literal-sort-keys": false,
+    "no-implicit-dependencies": false,
+    "member-ordering": false,
+    "no-this-assignment": false
   },
   "jsRules": {}
 }

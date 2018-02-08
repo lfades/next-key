@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.101",
-    "lodash": "^4.17.5",
-    "lodash.isempty": "^4.4.0"
+    "lodash": "^4.17.5"
   }
 }

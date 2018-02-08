@@ -1,13 +1,9 @@
 import { isEmpty } from 'lodash';
-import {
-  AuthPayloadInterface,
-  StringAnyMap,
-  StringStringMap
-} from './interfaces';
+import { IAuthPayload, StringAnyMap, StringStringMap } from './interfaces';
 
-type PayloadEntry = [string, string];
+export type PayloadEntry = [string, string];
 
-export default class AuthPayload implements AuthPayloadInterface {
+export default class AuthPayload implements IAuthPayload {
   private PAYLOAD: PayloadEntry[];
   private REVERSE_PAYLOAD: PayloadEntry[];
 

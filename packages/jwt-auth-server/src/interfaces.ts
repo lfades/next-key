@@ -6,12 +6,12 @@ export interface StringAnyMap {
   [key: string]: any;
 }
 
-export interface AuthScopeInterface {
+export interface IAuthScope {
   create(scope: string[]): string;
   parse(scope: string): string[];
 }
 
-export interface AuthPayloadInterface {
+export interface IAuthPayload {
   create(payload: StringAnyMap): StringAnyMap;
   parse(reversePayload: StringAnyMap): StringAnyMap;
 }
