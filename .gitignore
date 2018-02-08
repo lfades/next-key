@@ -34,13 +34,21 @@ build/Release
 
 # Dependency directories
 node_modules/
-jspm_packages/
+
+# Compiled files
+lib
+dist
+
+# Yarn
+yarn.lock
+.yarn-integrity
+
+# Npm
+package-lock.json
+.npm
 
 # Typescript v1 declaration files
 typings/
-
-# Optional npm cache directory
-.npm
 
 # Optional eslint cache
 .eslintcache
@@ -50,9 +58,6 @@ typings/
 
 # Output of 'npm pack'
 *.tgz
-
-# Yarn Integrity file
-.yarn-integrity
 
 # dotenv environment variables file
 .env
