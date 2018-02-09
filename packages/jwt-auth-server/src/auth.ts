@@ -10,9 +10,17 @@ export interface IAccessToken {
   Auth: AuthServer;
   cookie: string;
   expireAfter: number;
-
+  /**
+   * Creates a payload based in some data
+   */
   buildPayload(data: StringAnyMap): StringAnyMap;
+  /**
+   * Creates the accessToken
+   */
   create(payload: StringAnyMap): string;
+  /**
+   * Verifies an accessToken and returns its payload
+   */
   verify(accessToken: string): StringAnyMap;
 }
 
@@ -20,14 +28,21 @@ export interface IRefreshToken {
   Auth: AuthServer;
   cookie: string;
   expireAfter: number;
-
+  /**
+   * Creates the refreshToken
+   */
   create(data: StringAnyMap): Promise<string>;
+  /**
+   * Creates the payload for an accessToken
+   */
   createPayload(refreshToken: string): Promise<StringAnyMap>;
-  remove(refreshToken: string): void;
+  /**
+   * Removes the refreshToken
+   */
+  remove(refreshToken: string): Promise<boolean> | boolean;
 }
 
 export default class AuthServer {
-  public secure: boolean;
   public at: IAccessToken;
   public rt: IRefreshToken;
   public accessTokenCookie: string;
@@ -36,7 +51,6 @@ export default class AuthServer {
   public scope: AuthScope;
 
   constructor({
-    secure,
     AccessToken,
     RefreshToken,
     payload,
@@ -46,7 +60,6 @@ export default class AuthServer {
     RefreshToken: AuthToken<IRefreshToken>;
     payload: AuthPayload;
     scope?: AuthScope;
-    secure?: boolean;
   }) {
     this.at = new AccessToken(this);
     this.rt = new RefreshToken(this);
@@ -55,7 +68,6 @@ export default class AuthServer {
 
     this.payload = payload;
     this.scope = scope || new AuthScope();
-    this.secure = secure || false;
   }
   /**
    * Returns the expiration date for a refreshToken
@@ -96,10 +108,11 @@ export default class AuthServer {
   /**
    * Removes an active refreshToken
    */
-  public removeRefreshRoken(refreshToken: string) {
+  public removeRefreshRoken(refreshToken: string): Promise<boolean> | boolean {
     if (refreshToken) {
-      this.rt.remove(refreshToken);
+      return this.rt.remove(refreshToken);
     }
+    return false;
   }
   /**
    * Verifies an accessToken and returns its payload

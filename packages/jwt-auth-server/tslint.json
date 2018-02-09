@@ -24,7 +24,8 @@
     "object-literal-sort-keys": false,
     "no-implicit-dependencies": false,
     "member-ordering": false,
-    "no-this-assignment": false
+    "no-this-assignment": false,
+    "max-classes-per-file": false
   },
   "jsRules": {}
 }
