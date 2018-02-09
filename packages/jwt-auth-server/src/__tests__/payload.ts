@@ -1,4 +1,4 @@
-import { AuthPayload } from '../';
+import AuthPayload, { isEmpty } from '../payload';
 
 describe('Auth Payload', () => {
   const payload = new AuthPayload({
@@ -21,6 +21,20 @@ describe('Auth Payload', () => {
     name: 'Luis',
     lastName: 'Alvarez'
   };
+
+  it('Has a proper check for empty values', () => {
+    expect(isEmpty(null)).toBe(true);
+    expect(isEmpty(undefined)).toBe(true);
+    expect(isEmpty({})).toBe(true);
+    expect(isEmpty([])).toBe(true);
+    expect(isEmpty(' ')).toBe(true);
+
+    expect(isEmpty('something')).toBe(false);
+    expect(isEmpty(0)).toBe(false);
+    expect(isEmpty(false)).toBe(false);
+    expect(isEmpty([0])).toBe(false);
+    expect(isEmpty({ '0': 0 })).toBe(false);
+  });
 
   it('Creates a payload', () => {
     expect(payload.create({})).toEqual({});
