@@ -15,6 +15,8 @@ export default class AuthPayload implements IAuthPayload {
    * Replaces the keys of a payload
    */
   public reverse(keys: PayloadEntry[], payload: StringAnyMap): StringAnyMap {
+    if (!keys.length) return payload;
+
     return keys.reduce((p: StringAnyMap, [k, pk]) => {
       const v = payload[k];
 

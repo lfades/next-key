@@ -9,7 +9,6 @@ export interface AuthToken<I> {
 export interface IAccessToken {
   Auth: AuthServer;
   cookie: string;
-  expireAfter: number;
   /**
    * Creates a payload based in some data
    */
@@ -22,12 +21,15 @@ export interface IAccessToken {
    * Verifies an accessToken and returns its payload
    */
   verify(accessToken: string): StringAnyMap;
+  /**
+   * Returns the expiration date of an accessToken
+   */
+  getExpDate(): Date;
 }
 
 export interface IRefreshToken {
   Auth: AuthServer;
   cookie: string;
-  expireAfter: number;
   /**
    * Creates the refreshToken
    */
@@ -40,6 +42,10 @@ export interface IRefreshToken {
    * Removes the refreshToken
    */
   remove(refreshToken: string): Promise<boolean> | boolean;
+  /**
+   * Returns the expiration date of a refreshToken
+   */
+  getExpDate(): Date;
 }
 
 export default class AuthServer {
@@ -70,18 +76,6 @@ export default class AuthServer {
     this.scope = scope || new AuthScope();
   }
   /**
-   * Returns the expiration date for a refreshToken
-   */
-  public refreshTokenExpiresAt() {
-    return new Date(Date.now() + this.rt.expireAfter);
-  }
-  /**
-   * Returns the expiration date for an accessToken
-   */
-  public accessTokenExpiresAt() {
-    return new Date(Date.now() + this.at.expireAfter);
-  }
-  /**
    * Creates a new accessToken
    */
   public createAccessToken(data: StringAnyMap) {
@@ -106,6 +100,30 @@ export default class AuthServer {
     };
   }
   /**
+   * Verifies an accessToken and returns its payload
+   */
+  public verify(accessToken: string) {
+    return this.payload.parse(this.at.verify(accessToken));
+  }
+  /**
+   * Decodes and returns the payload of an accessToken
+   */
+  public decode(accessToken: string) {
+    if (!accessToken) return null;
+
+    try {
+      return this.verify(accessToken);
+    } catch (error) {
+      return null;
+    }
+  }
+  /**
+   * Returns the payload for an accessToken from a refreshToken
+   */
+  public getPayload(refreshToken: string) {
+    return this.rt.createPayload(refreshToken);
+  }
+  /**
    * Removes an active refreshToken
    */
   public removeRefreshRoken(refreshToken: string): Promise<boolean> | boolean {
@@ -113,12 +131,6 @@ export default class AuthServer {
       return this.rt.remove(refreshToken);
     }
     return false;
-  }
-  /**
-   * Verifies an accessToken and returns its payload
-   */
-  public verify(accessToken: string) {
-    return this.payload.parse(this.at.verify(accessToken));
   }
   /**
    * Returns the accessToken from a JWT Token using the headers or cookies of a
@@ -140,23 +152,5 @@ export default class AuthServer {
       : cookies && cookies[this.accessTokenCookie];
 
     return accessToken || null;
-  }
-  /**
-   * Returns the payload of an accessToken
-   */
-  public getPayload(accessToken: string) {
-    if (!accessToken) return null;
-
-    try {
-      return this.verify(accessToken);
-    } catch (error) {
-      return null;
-    }
-  }
-  /**
-   * Returns the payload for an accessToken from a refreshToken
-   */
-  public createPayload(refreshToken: string) {
-    return this.rt.createPayload(refreshToken);
   }
 }

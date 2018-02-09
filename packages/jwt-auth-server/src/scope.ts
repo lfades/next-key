@@ -20,7 +20,7 @@ export default class AuthScope implements IAuthScope {
    * ['admin:read', 'admin:write']
    */
   public create(scope: string[]): string {
-    if (!scope || !scope.length) return '';
+    if (!scope.length) return '';
 
     let lastName: string;
     const shortPerm = (perm: string) => this.SCOPE[perm] || perm;
@@ -45,7 +45,7 @@ export default class AuthScope implements IAuthScope {
    * Returns a scope string as an array of rules
    */
   public parse(scopeStr: string): string[] {
-    if (!scopeStr || !scopeStr.length) return [];
+    if (!scopeStr) return [];
 
     const longPerm = (perm: string) => this.REVERSE_SCOPE[perm] || perm;
     const joinPerm = (name: string) => (perm: string) => name + ':' + perm;

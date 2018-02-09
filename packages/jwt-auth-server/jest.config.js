@@ -1,4 +1,9 @@
 module.exports = {
+  "globals": {
+    "ts-jest": {
+      "tsConfigFile": "tsconfig.test.json"
+    }
+  },
   "roots": [
     "<rootDir>/src"
   ],
@@ -11,7 +16,11 @@ module.exports = {
     "tsx",
     "js",
     "jsx",
-    "json",
-    "node"
+    "json"
+  ],
+  "mapCoverage": true,
+  "coverageDirectory": "coverage",
+  "collectCoverageFrom": [
+    "src/**"
   ]
 }

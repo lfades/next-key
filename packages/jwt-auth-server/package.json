@@ -8,7 +8,7 @@
     "fix": "tslint -p tsconfig.json --fix",
     "tslint": "tslint -c tslint.json -p tsconfig.json -t codeframe",
     "jest": "jest",
-    "test": "npm run tslint && jest",
+    "test": "npm run tslint && jest --coverage",
     "prebuild": "npm run test",
     "build": "tsc"
   },

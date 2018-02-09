@@ -18,11 +18,9 @@ describe('Auth Server', () => {
 
   class AccessToken implements IAccessToken {
     public cookie: string;
-    public expireAfter: number;
 
     constructor(public Auth: AuthServer) {
       this.cookie = ACCESS_TOKEN_COOKIE;
-      this.expireAfter = ONE_MINUTE * 20;
     }
     public buildPayload({
       id,
@@ -54,22 +52,23 @@ describe('Auth Server', () => {
 
       return payload;
     }
+    public getExpDate() {
+      return new Date(Date.now() + ONE_MINUTE * 20);
+    }
   }
 
   class RefreshToken implements IRefreshToken {
     public cookie: string;
-    public expireAfter: number;
 
     constructor(public Auth: AuthServer) {
       this.cookie = REFRESH_TOKEN_COOKIE;
-      this.expireAfter = ONE_MONTH;
     }
     public async create({ id: userId }: { id: string }) {
       const id = Date.now().toString();
 
       refreshTokens.set(id, {
         userId,
-        expireAt: this.Auth.refreshTokenExpiresAt()
+        expireAt: this.getExpDate()
       });
 
       return id;
@@ -79,6 +78,9 @@ describe('Auth Server', () => {
     }
     public async createPayload(refreshToken: string) {
       return refreshTokens.get(refreshToken);
+    }
+    public getExpDate() {
+      return new Date(Date.now() + ONE_MONTH);
     }
   }
 
@@ -103,7 +105,7 @@ describe('Auth Server', () => {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxODE0MTIzNCwiZXhwIjoxNTE4MTQyNDM0fQ.3ZRmx08htMX5KLsv8VhBVD8vjxHzWOiDDli7JXFf83Q';
 
   // Payload to create a token
-  const payload = {
+  const userPayload = {
     id: 'user_123',
     companyId: 'company_123',
     admin: true
@@ -111,32 +113,109 @@ describe('Auth Server', () => {
 
   // Payload got from a token
   const tokenPayload = {
-    id: 'user_123',
-    companyId: 'company_123',
+    id: userPayload.id,
+    companyId: userPayload.companyId,
     scope: 'a:r:w'
   };
 
-  it('has a valid expiration date for the refreshToken', () => {
-    expect(authServer.refreshTokenExpiresAt()).toBeInstanceOf(Date);
-  });
+  it('should set a default scope if no scope is used', () => {
+    const auth = new AuthServer({
+      AccessToken,
+      RefreshToken,
+      payload: authPayload
+    });
 
-  it('has a valid expiration date for the accessToken', () => {
-    expect(authServer.accessTokenExpiresAt()).toBeInstanceOf(Date);
+    expect(auth.scope).toBeInstanceOf(AuthScope);
   });
 
   it('creates an accessToken', () => {
-    expect(typeof authServer.createAccessToken(payload)).toBe('string');
+    expect(typeof authServer.createAccessToken(userPayload)).toBe('string');
   });
 
   it('creates a refreshToken', async () => {
-    expect(typeof await authServer.createRefreshToken(payload)).toBe('string');
+    expect(typeof await authServer.createRefreshToken(userPayload)).toBe(
+      'string'
+    );
   });
 
-  // it creates both tokens
+  it('creates both tokens', async () => {
+    expect(await authServer.createTokens(userPayload)).toEqual({
+      accessToken: expect.any(String),
+      refreshToken: expect.any(String)
+    });
+  });
 
-  it('decodes an accessToken', () => {
-    expect(
-      authServer.getPayload(authServer.createAccessToken(payload))
-    ).toEqual(tokenPayload);
+  it('gets the payload for an accessToken', async () => {
+    const refreshToken = await authServer.createRefreshToken(userPayload);
+
+    expect(await authServer.getPayload(refreshToken)).toEqual({
+      userId: userPayload.id,
+      expireAt: refreshTokens.get(refreshToken).expireAt
+    });
+  });
+
+  it('Removes a refreshToken', async () => {
+    const refreshToken = await authServer.createRefreshToken(userPayload);
+
+    expect(authServer.removeRefreshRoken(refreshToken)).toBe(true);
+    expect(authServer.removeRefreshRoken(refreshToken)).toBe(false);
+    expect(authServer.removeRefreshRoken('')).toBe(false);
+  });
+
+  describe('Verifies an accessToken', () => {
+    it('returns the payload', () => {
+      expect(
+        authServer.verify(authServer.createAccessToken(userPayload))
+      ).toEqual(tokenPayload);
+    });
+
+    it('throws if expired', () => {
+      expect(() => {
+        authServer.verify(expiredToken);
+      }).toThrow();
+    });
+  });
+
+  describe('decodes an accessToken', () => {
+    it('Returns the payload', () => {
+      expect(
+        authServer.decode(authServer.createAccessToken(userPayload))
+      ).toEqual(tokenPayload);
+    });
+
+    it('Returns null with empty accessToken', () => {
+      expect(authServer.decode('')).toBe(null);
+    });
+
+    it('Returns null if expired', () => {
+      expect(authServer.decode(expiredToken)).toBe(null);
+    });
+  });
+
+  describe('Gets an accessToken from a request', () => {
+    const headers = {
+      authorization: 'Bearer ' + expiredToken
+    };
+    const cookies = {
+      [ACCESS_TOKEN_COOKIE]: 'x' + expiredToken
+    };
+
+    it('uses the headers to get the token', () => {
+      expect(authServer.getAccessToken({ headers })).toBe(expiredToken);
+    });
+
+    it('uses the cookies to get the token', () => {
+      expect(authServer.getAccessToken({ cookies })).toBe('x' + expiredToken);
+    });
+
+    it('always prioritizes the headers', () => {
+      expect(authServer.getAccessToken({ headers, cookies })).toBe(
+        expiredToken
+      );
+    });
+
+    it('should be null with empty object', () => {
+      expect(authServer.getAccessToken({})).toBe(null);
+    });
   });
 });
