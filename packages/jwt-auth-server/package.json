@@ -10,7 +10,8 @@
     "jest": "jest",
     "test": "npm run tslint && jest --coverage",
     "prebuild": "npm run test",
-    "build": "tsc"
+    "build": "tsc",
+    "prepublish": "npm run build"
   },
   "author": "lfades",
   "license": "MIT",
