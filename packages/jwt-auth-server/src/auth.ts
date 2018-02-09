@@ -49,10 +49,8 @@ export interface IRefreshToken {
 }
 
 export default class AuthServer {
-  public at: IAccessToken;
-  public rt: IRefreshToken;
-  public accessTokenCookie: string;
-  public refreshTokenCookie: string;
+  public accessToken: IAccessToken;
+  public refreshToken: IRefreshToken;
   public payload: AuthPayload;
   public scope: AuthScope;
 
@@ -67,10 +65,8 @@ export default class AuthServer {
     payload: AuthPayload;
     scope?: AuthScope;
   }) {
-    this.at = new AccessToken(this);
-    this.rt = new RefreshToken(this);
-    this.accessTokenCookie = this.at.cookie;
-    this.refreshTokenCookie = this.rt.cookie;
+    this.accessToken = new AccessToken(this);
+    this.refreshToken = new RefreshToken(this);
 
     this.payload = payload;
     this.scope = scope || new AuthScope();
@@ -79,14 +75,14 @@ export default class AuthServer {
    * Creates a new accessToken
    */
   public createAccessToken(data: StringAnyMap) {
-    const payload = this.payload.create(this.at.buildPayload(data));
-    return this.at.create(payload);
+    const payload = this.payload.create(this.accessToken.buildPayload(data));
+    return this.accessToken.create(payload);
   }
   /**
    * Creates a new refreshToken
    */
   public createRefreshToken(data: StringAnyMap) {
-    return this.rt.create(data);
+    return this.refreshToken.create(data);
   }
   /**
    * Creates both an accessToken and refreshToken
@@ -103,7 +99,7 @@ export default class AuthServer {
    * Verifies an accessToken and returns its payload
    */
   public verify(accessToken: string) {
-    return this.payload.parse(this.at.verify(accessToken));
+    return this.payload.parse(this.accessToken.verify(accessToken));
   }
   /**
    * Decodes and returns the payload of an accessToken
@@ -121,14 +117,14 @@ export default class AuthServer {
    * Returns the payload for an accessToken from a refreshToken
    */
   public getPayload(refreshToken: string) {
-    return this.rt.createPayload(refreshToken);
+    return this.refreshToken.createPayload(refreshToken);
   }
   /**
    * Removes an active refreshToken
    */
   public removeRefreshRoken(refreshToken: string): Promise<boolean> | boolean {
     if (refreshToken) {
-      return this.rt.remove(refreshToken);
+      return this.refreshToken.remove(refreshToken);
     }
     return false;
   }
@@ -149,7 +145,7 @@ export default class AuthServer {
     const { authorization = null } = headers || {};
     const accessToken = authorization
       ? authorization.split(' ')[1]
-      : cookies && cookies[this.accessTokenCookie];
+      : cookies && cookies[this.accessToken.cookie];
 
     return accessToken || null;
   }
