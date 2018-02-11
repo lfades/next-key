@@ -9,7 +9,7 @@ import {
   IRefreshToken
 } from 'jwt-auth-server';
 import request from 'supertest';
-import AuthWithExpress from '../express';
+import AuthWithExpress from '../';
 
 describe('Auth with Express', () => {
   const ONE_MINUTE = 1000 * 60;
