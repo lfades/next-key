@@ -1,6 +1,14 @@
 import { CookieOptions, Request, RequestHandler, Response } from 'express';
-import { AuthServer } from 'jwt-auth-server';
+import { AuthServer, StringAnyMap } from 'jwt-auth-server';
 import { asyncMiddleware } from './utils';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: StringAnyMap | null;
+    }
+  }
+}
 
 export interface PassportAuthOptions {
   successRedirect?: string;
@@ -68,7 +76,7 @@ export default class AuthWithExpress {
   /**
    * Assigns to req.user the payload of an accessToken or null
    */
-  public authorize: RequestHandler = (req, _res, next) => {
+  public authorize: RequestHandler = (req: Request, _res, next) => {
     const accessToken = this.Auth.getAccessToken(req);
 
     req.user = accessToken ? this.Auth.decode(accessToken) : null;
