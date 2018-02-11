@@ -19,6 +19,13 @@
       true,
       "ignore-same-line"
     ],
+    "variable-name": [
+      true,
+      "ban-keywords",
+      "check-format",
+      "allow-leading-underscore",
+      "allow-pascal-case"
+    ],
     "interface-name": false,
     "array-type": false,
     "object-literal-sort-keys": false,

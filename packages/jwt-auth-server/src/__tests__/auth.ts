@@ -76,7 +76,8 @@ describe('Auth Server', () => {
     public remove(refreshToken: string) {
       return refreshTokens.delete(refreshToken);
     }
-    public async createPayload(refreshToken: string) {
+    public async getPayload(refreshToken: string, reset: () => any) {
+      reset();
       return refreshTokens.get(refreshToken);
     }
     public getExpDate() {
@@ -129,7 +130,10 @@ describe('Auth Server', () => {
   });
 
   it('creates an accessToken', () => {
-    expect(typeof authServer.createAccessToken(userPayload)).toBe('string');
+    expect(authServer.createAccessToken(userPayload)).toEqual({
+      accessToken: expect.any(String),
+      payload: tokenPayload
+    });
   });
 
   it('creates a refreshToken', async () => {
@@ -140,15 +144,19 @@ describe('Auth Server', () => {
 
   it('creates both tokens', async () => {
     expect(await authServer.createTokens(userPayload)).toEqual({
+      refreshToken: expect.any(String),
       accessToken: expect.any(String),
-      refreshToken: expect.any(String)
+      payload: tokenPayload
     });
   });
 
   it('gets the payload for an accessToken', async () => {
     const refreshToken = await authServer.createRefreshToken(userPayload);
+    const reset = () => {
+      // do nothing
+    };
 
-    expect(await authServer.getPayload(refreshToken)).toEqual({
+    expect(await authServer.getPayload(refreshToken, reset)).toEqual({
       userId: userPayload.id,
       expireAt: refreshTokens.get(refreshToken).expireAt
     });
@@ -164,9 +172,11 @@ describe('Auth Server', () => {
 
   describe('Verifies an accessToken', () => {
     it('returns the payload', () => {
-      expect(
-        authServer.verify(authServer.createAccessToken(userPayload))
-      ).toEqual(tokenPayload);
+      const at = authServer.createAccessToken(userPayload);
+      const decodedPayload = authServer.verify(at.accessToken);
+
+      expect(decodedPayload).toEqual(at.payload);
+      expect(decodedPayload).toEqual(tokenPayload);
     });
 
     it('throws if expired', () => {
@@ -178,9 +188,11 @@ describe('Auth Server', () => {
 
   describe('decodes an accessToken', () => {
     it('Returns the payload', () => {
-      expect(
-        authServer.decode(authServer.createAccessToken(userPayload))
-      ).toEqual(tokenPayload);
+      const at = authServer.createAccessToken(userPayload);
+      const decodedPayload = authServer.decode(at.accessToken);
+
+      expect(decodedPayload).toEqual(at.payload);
+      expect(decodedPayload).toEqual(tokenPayload);
     });
 
     it('Returns null with empty accessToken', () => {

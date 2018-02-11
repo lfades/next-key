@@ -1,3 +1,4 @@
+import { IncomingHttpHeaders } from 'http';
 import { StringAnyMap } from './interfaces';
 import AuthPayload from './payload';
 import AuthScope from './scope';
@@ -35,9 +36,11 @@ export interface IRefreshToken {
    */
   create(data: StringAnyMap): Promise<string>;
   /**
-   * Creates the payload for an accessToken
+   * Returns the payload in a refreshToken that can be used to create an
+   * accessToken
+   * @param reset Refresh the cookie of the refreshToken
    */
-  createPayload(refreshToken: string): Promise<StringAnyMap>;
+  getPayload(refreshToken: string, reset: () => void): Promise<StringAnyMap>;
   /**
    * Removes the refreshToken
    */
@@ -75,8 +78,11 @@ export default class AuthServer {
    * Creates a new accessToken
    */
   public createAccessToken(data: StringAnyMap) {
-    const payload = this.payload.create(this.accessToken.buildPayload(data));
-    return this.accessToken.create(payload);
+    const payload = this.accessToken.buildPayload(data);
+    return {
+      accessToken: this.accessToken.create(this.payload.create(payload)),
+      payload
+    };
   }
   /**
    * Creates a new refreshToken
@@ -89,10 +95,14 @@ export default class AuthServer {
    */
   public async createTokens(
     data: StringAnyMap
-  ): Promise<{ refreshToken: string; accessToken: string }> {
+  ): Promise<{
+    refreshToken: string;
+    accessToken: string;
+    payload: StringAnyMap;
+  }> {
     return {
       refreshToken: await this.createRefreshToken(data),
-      accessToken: this.createAccessToken(data)
+      ...this.createAccessToken(data)
     };
   }
   /**
@@ -114,10 +124,12 @@ export default class AuthServer {
     }
   }
   /**
-   * Returns the payload for an accessToken from a refreshToken
+   * Returns the payload in a refreshToken that can be used to create an
+   * accessToken
+   * @param reset Refresh the cookie of the refreshToken
    */
-  public getPayload(refreshToken: string) {
-    return this.refreshToken.createPayload(refreshToken);
+  public getPayload(refreshToken: string, reset: () => void) {
+    return this.refreshToken.getPayload(refreshToken, reset);
   }
   /**
    * Removes an active refreshToken
@@ -129,24 +141,50 @@ export default class AuthServer {
     return false;
   }
   /**
+   * Returns a cookie, it searchs in this order:
+   * signedCookies -> cookies -> null
+   */
+  public getCookie(
+    {
+      cookies,
+      signedCookies
+    }: {
+      cookies?: StringAnyMap;
+      signedCookies?: StringAnyMap;
+    },
+    cookie: string
+  ): string | null {
+    return (
+      (signedCookies && signedCookies[cookie]) ||
+      (cookies && cookies[cookie]) ||
+      null
+    );
+  }
+  /**
    * Returns the accessToken from a JWT Token using the headers or cookies of a
-   * request
-   * @param req It may be an http request or just an object with headers and/or
-   * cookies
-   * @param req.headers Headers with an authorization token
-   * @param req.cookies They will be used only if there isn't a token in the
-   * headers
+   * request, it will always look inside headers first
    */
   public getAccessToken(req: {
-    headers?: { authorization: string };
+    headers?: IncomingHttpHeaders;
     cookies?: StringAnyMap;
+    signedCookies?: StringAnyMap;
   }): string | null {
-    const { headers, cookies } = req;
-    const { authorization = null } = headers || {};
-    const accessToken = authorization
-      ? authorization.split(' ')[1]
-      : cookies && cookies[this.accessToken.cookie];
+    const { authorization = '' } = req.headers || {};
+    const accessToken =
+      (authorization &&
+        typeof authorization === 'string' &&
+        authorization.split(' ')[1]) ||
+      this.getCookie(req, this.accessToken.cookie);
 
-    return accessToken || null;
+    return accessToken;
+  }
+  /**
+   * Returns the refreshToken from the cookies
+   */
+  public getRefreshToken(req: {
+    cookies?: StringAnyMap;
+    signedCookies?: StringAnyMap;
+  }) {
+    return this.getCookie(req, this.refreshToken.cookie);
   }
 }
