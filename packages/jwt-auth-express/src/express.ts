@@ -1,6 +1,5 @@
 import { CookieOptions, Request, RequestHandler, Response } from 'express';
 import { AuthServer } from 'jwt-auth-server';
-import passport from 'passport';
 import { asyncMiddleware } from './utils';
 
 export interface PassportAuthOptions {
@@ -76,36 +75,6 @@ export default class AuthWithExpress {
 
     next();
   };
-  /**
-   * Authenticates an user using passport.authenticate
-   */
-  public authenticate(
-    strategies: string | string[],
-    options: PassportAuthOptions = {}
-  ) {
-    return (req: Request, res: Response) => {
-      passport.authenticate(
-        strategies,
-        (
-          error,
-          tokens: { accessToken: string; refreshToken: string },
-          info: PassportAuthOptions = {}
-        ) => {
-          const {
-            successRedirect = info.successRedirect || '/',
-            failureRedirect = info.failureRedirect || '/'
-          } = options;
-
-          if (error) {
-            res.redirect(failureRedirect);
-            return;
-          }
-          this.setTokens(res, tokens);
-          res.redirect(successRedirect);
-        }
-      )(req, res);
-    };
-  }
   /**
    * Returns the cookies that will be used to save a token
    */
