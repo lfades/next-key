@@ -221,13 +221,40 @@ describe('Auth Server', () => {
     });
 
     it('always prioritizes the headers', () => {
-      expect(authServer.getAccessToken({ headers, cookies })).toBe(
-        expiredToken
-      );
+      expect(
+        authServer.getAccessToken({ headers, cookies, signedCookies: cookies })
+      ).toBe(expiredToken);
     });
 
     it('should be null with empty object', () => {
       expect(authServer.getAccessToken({})).toBe(null);
+    });
+  });
+
+  describe('Gets a refreshToken from a request', () => {
+    const signedCookies = {
+      [REFRESH_TOKEN_COOKIE]: 'xxx'
+    };
+    const cookies = {
+      [REFRESH_TOKEN_COOKIE]: 'yyy'
+    };
+
+    it('uses the signed cookies to get the token', () => {
+      expect(authServer.getRefreshToken({ signedCookies })).toBe('xxx');
+    });
+
+    it('uses the cookies to get the token', () => {
+      expect(authServer.getRefreshToken({ cookies })).toBe('yyy');
+    });
+
+    it('always prioritizes the signedCookies', () => {
+      expect(authServer.getRefreshToken({ signedCookies, cookies })).toBe(
+        'xxx'
+      );
+    });
+
+    it('should be null with empty object', () => {
+      expect(authServer.getRefreshToken({})).toBe(null);
     });
   });
 });
