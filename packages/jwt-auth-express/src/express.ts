@@ -10,11 +10,6 @@ declare global {
   }
 }
 
-export interface PassportAuthOptions {
-  successRedirect?: string;
-  failureRedirect?: string;
-}
-
 export interface AuthWithExpressOptions {
   cookie?: CookieOptions | ((isAccessToken: boolean) => CookieOptions);
 }
