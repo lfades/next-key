@@ -27,18 +27,23 @@ export default class HttpConnector {
     });
   }
 
-  public createAccessToken(fetchOptions: RequestInit) {
+  public createAccessToken(
+    fetchOptions: RequestInit
+  ): Promise<{ accessToken: string }> {
     return this.fetchUrl(this.createAccessTokenUrl, fetchOptions);
   }
 
-  public setAccessToken(accessToken: string, fetchOptions: RequestInit) {
+  public setAccessToken(
+    accessToken: string,
+    fetchOptions: RequestInit
+  ): Promise<{ accessToken: string }> {
     return this.fetchUrl(
       this.setAccessTokenUrl + '?at=' + accessToken,
       fetchOptions
     );
   }
 
-  public logout(fetchOptions: RequestInit) {
+  public logout(fetchOptions: RequestInit): Promise<{ refreshToken: string }> {
     return this.fetchUrl(this.logoutUrl, fetchOptions);
   }
 }
