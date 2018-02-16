@@ -11,17 +11,10 @@ describe('Auth Server', () => {
   const ONE_MINUTE = 1000 * 60;
   const ONE_DAY = ONE_MINUTE * 60 * 24;
   const ONE_MONTH = ONE_DAY * 30;
-  const ACCESS_TOKEN_COOKIE = 'abc';
   const ACCESS_TOKEN_SECRET = 'password';
-  const REFRESH_TOKEN_COOKIE = 'aei';
   const refreshTokens = new Map();
 
   class AccessToken implements IAccessToken {
-    public cookie: string;
-
-    constructor(public Auth: AuthServer) {
-      this.cookie = ACCESS_TOKEN_COOKIE;
-    }
     public buildPayload({
       id,
       companyId,
@@ -32,7 +25,7 @@ describe('Auth Server', () => {
       admin: boolean;
     }) {
       const scope = admin
-        ? this.Auth.scope.create(['admin:read', 'admin:write'])
+        ? authScope.create(['admin:read', 'admin:write'])
         : '';
       return { id, companyId, scope };
     }
@@ -55,11 +48,6 @@ describe('Auth Server', () => {
   }
 
   class RefreshToken implements IRefreshToken {
-    public cookie: string;
-
-    constructor(public Auth: AuthServer) {
-      this.cookie = REFRESH_TOKEN_COOKIE;
-    }
     public async getPayload(refreshToken: string, reset: () => any) {
       reset();
       return refreshTokens.get(refreshToken);
@@ -90,8 +78,8 @@ describe('Auth Server', () => {
   });
 
   const authServer = new AuthServer({
-    AccessToken,
-    RefreshToken,
+    accessToken: new AccessToken(),
+    refreshToken: new RefreshToken(),
     payload: authPayload,
     scope: authScope
   });
@@ -113,14 +101,14 @@ describe('Auth Server', () => {
     scope: 'a:r:w'
   };
 
-  it('should set a default scope if no scope is used', () => {
+  it('should set a default scope and payload', () => {
     const auth = new AuthServer({
-      AccessToken,
-      RefreshToken,
-      payload: authPayload
+      accessToken: new AccessToken(),
+      refreshToken: new RefreshToken()
     });
 
     expect(auth.scope).toBeInstanceOf(AuthScope);
+    expect(auth.payload).toBeInstanceOf(AuthPayload);
   });
 
   it('creates an accessToken', () => {

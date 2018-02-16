@@ -7,14 +7,13 @@ export interface AuthToken<I> {
 }
 
 export interface AuthServerOptions {
-  AccessToken: AuthToken<IAccessToken>;
-  RefreshToken: AuthToken<IRefreshToken>;
-  payload: AuthPayload;
+  accessToken: IAccessToken;
+  refreshToken: IRefreshToken;
+  payload?: AuthPayload;
   scope?: AuthScope;
 }
 
 export interface IAccessToken {
-  Auth: AuthServer;
   /**
    * Creates a payload based in some data
    */
@@ -30,7 +29,6 @@ export interface IAccessToken {
 }
 
 export interface IRefreshToken {
-  Auth: AuthServer;
   cookie?: string;
   cookieOptions?: CookieOptions | ((refreshToken: string) => CookieOptions);
   /**
@@ -56,15 +54,15 @@ export default class AuthServer {
   public scope: AuthScope;
 
   constructor({
-    AccessToken,
-    RefreshToken,
+    accessToken,
+    refreshToken,
     payload,
     scope
   }: AuthServerOptions) {
-    this.accessToken = new AccessToken(this);
-    this.refreshToken = new RefreshToken(this);
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
 
-    this.payload = payload;
+    this.payload = payload || new AuthPayload();
     this.scope = scope || new AuthScope();
   }
   /**

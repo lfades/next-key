@@ -34,7 +34,7 @@ describe('Auth with Express', () => {
       admin: boolean;
     }) {
       const scope = admin
-        ? this.Auth.scope.create(['admin:read', 'admin:write'])
+        ? authScope.create(['admin:read', 'admin:write'])
         : '';
       return { id, companyId, scope };
     }
@@ -78,6 +78,10 @@ describe('Auth with Express', () => {
     }
   }
 
+  const authScope = new AuthScope({
+    admin: 'a'
+  });
+
   const authServer = new AuthWithExpress({
     AccessToken,
     RefreshToken,
@@ -86,9 +90,7 @@ describe('Auth with Express', () => {
       cId: 'companyId',
       scope: 'scope'
     }),
-    scope: new AuthScope({
-      admin: 'a'
-    })
+    scope: authScope
   });
 
   const expiredToken =
