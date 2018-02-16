@@ -52,9 +52,6 @@ describe('Auth Server', () => {
 
       return payload;
     }
-    public getExpDate() {
-      return new Date(Date.now() + ONE_MINUTE * 20);
-    }
   }
 
   class RefreshToken implements IRefreshToken {
@@ -63,25 +60,22 @@ describe('Auth Server', () => {
     constructor(public Auth: AuthServer) {
       this.cookie = REFRESH_TOKEN_COOKIE;
     }
+    public async getPayload(refreshToken: string, reset: () => any) {
+      reset();
+      return refreshTokens.get(refreshToken);
+    }
     public async create({ id: userId }: { id: string }) {
       const id = Date.now().toString();
 
       refreshTokens.set(id, {
         userId,
-        expireAt: this.getExpDate()
+        expireAt: new Date(Date.now() + ONE_MONTH)
       });
 
       return id;
     }
     public remove(refreshToken: string) {
       return refreshTokens.delete(refreshToken);
-    }
-    public async getPayload(refreshToken: string, reset: () => any) {
-      reset();
-      return refreshTokens.get(refreshToken);
-    }
-    public getExpDate() {
-      return new Date(Date.now() + ONE_MONTH);
     }
   }
 
@@ -201,60 +195,6 @@ describe('Auth Server', () => {
 
     it('Returns null if expired', () => {
       expect(authServer.decode(expiredToken)).toBe(null);
-    });
-  });
-
-  describe('Gets an accessToken from a request', () => {
-    const headers = {
-      authorization: 'Bearer ' + expiredToken
-    };
-    const cookies = {
-      [ACCESS_TOKEN_COOKIE]: 'x' + expiredToken
-    };
-
-    it('uses the headers to get the token', () => {
-      expect(authServer.getAccessToken({ headers })).toBe(expiredToken);
-    });
-
-    it('uses the cookies to get the token', () => {
-      expect(authServer.getAccessToken({ cookies })).toBe('x' + expiredToken);
-    });
-
-    it('always prioritizes the headers', () => {
-      expect(
-        authServer.getAccessToken({ headers, cookies, signedCookies: cookies })
-      ).toBe(expiredToken);
-    });
-
-    it('should be null with empty object', () => {
-      expect(authServer.getAccessToken({})).toBe(null);
-    });
-  });
-
-  describe('Gets a refreshToken from a request', () => {
-    const signedCookies = {
-      [REFRESH_TOKEN_COOKIE]: 'xxx'
-    };
-    const cookies = {
-      [REFRESH_TOKEN_COOKIE]: 'yyy'
-    };
-
-    it('uses the signed cookies to get the token', () => {
-      expect(authServer.getRefreshToken({ signedCookies })).toBe('xxx');
-    });
-
-    it('uses the cookies to get the token', () => {
-      expect(authServer.getRefreshToken({ cookies })).toBe('yyy');
-    });
-
-    it('always prioritizes the signedCookies', () => {
-      expect(authServer.getRefreshToken({ signedCookies, cookies })).toBe(
-        'xxx'
-      );
-    });
-
-    it('should be null with empty object', () => {
-      expect(authServer.getRefreshToken({})).toBe(null);
     });
   });
 });

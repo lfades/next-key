@@ -1,5 +1,5 @@
 import fetch from 'isomorphic-unfetch';
-import FetchError from './fetchError';
+import { FetchConnector, FetchError } from './utils';
 
 export interface HttpConnectorOptions {
   createAccessTokenUrl: string;
@@ -7,7 +7,7 @@ export interface HttpConnectorOptions {
   logoutUrl: string;
 }
 
-export default class HttpConnector {
+export default class HttpConnector implements FetchConnector {
   public createAccessTokenUrl: string;
   public setAccessTokenUrl: string;
   public logoutUrl: string;
@@ -18,32 +18,22 @@ export default class HttpConnector {
     this.logoutUrl = options.logoutUrl;
   }
 
-  public fetchUrl(url: string, fetchOptions: RequestInit) {
+  public createAccessToken(
+    fetchOptions: RequestInit
+  ): Promise<{ accessToken: string }> {
+    return this.fetch(this.createAccessTokenUrl, fetchOptions);
+  }
+
+  public logout(fetchOptions: RequestInit): Promise<{ done: boolean }> {
+    return this.fetch(this.logoutUrl, fetchOptions);
+  }
+
+  private fetch(url: string, fetchOptions: RequestInit) {
     return fetch(url, fetchOptions).then(res => {
       if (res.status === 200) {
         return res.json();
       }
       throw new FetchError(res);
     });
-  }
-
-  public createAccessToken(
-    fetchOptions: RequestInit
-  ): Promise<{ accessToken: string }> {
-    return this.fetchUrl(this.createAccessTokenUrl, fetchOptions);
-  }
-
-  public setAccessToken(
-    accessToken: string,
-    fetchOptions: RequestInit
-  ): Promise<{ accessToken: string }> {
-    return this.fetchUrl(
-      this.setAccessTokenUrl + '?at=' + accessToken,
-      fetchOptions
-    );
-  }
-
-  public logout(fetchOptions: RequestInit): Promise<{ refreshToken: string }> {
-    return this.fetchUrl(this.logoutUrl, fetchOptions);
   }
 }

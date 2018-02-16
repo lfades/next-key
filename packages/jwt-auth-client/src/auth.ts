@@ -1,220 +1,183 @@
-import HttpConnector from './connectors/http';
+import Cookies, { CookieAttributes } from 'js-cookie';
+import { FetchConnector } from './connectors/utils';
+
+export type CookieOptions =
+  | CookieAttributes
+  | ((accessToken?: string) => CookieAttributes);
+
+export type GetTokens = (
+  req: any
+) => { refreshToken: string; accessToken: string } | void;
 
 export type Logout = (
-  logout: () => Promise<{ refreshToken: string }>,
+  logout: () => Promise<{ done: boolean }>,
   options: any
 ) => void;
 
+export type Decode = (accessToken: string) => object | null;
+
 export interface AuthClientOptions {
-  accessToken: {
-    name: string;
-    cookie: string;
-    decode(accessToken: string): object | null;
-  };
-  refreshToken: {
-    cookie: string;
-  };
-  fetchConnector: HttpConnector;
-  getHeaders?(accessToken: string): object;
-  onLogout?: Logout;
+  cookie: string;
+  cookieOptions?: CookieOptions;
+  decode: Decode;
+  fetchConnector: FetchConnector;
+  refreshTokenCookie?: string;
+  getTokens?: GetTokens;
 }
 
-const getHeadersFn = (accessToken: string) => ({
-  authorization: 'Bearer ' + accessToken
-});
-
-const onLogoutFn: Logout = logout => {
-  logout().catch(error => {
-    throw error;
-  });
-};
-
 export default class AuthClient {
-  public shouldDecodeToken: boolean;
-  public accessToken: AuthClientOptions['accessToken'];
-  public refreshToken: AuthClientOptions['refreshToken'];
-  public fetch: HttpConnector;
-  public getHeaders: (accessToken: string) => object;
-  public onLogout: Logout;
+  public cookie: string;
+  public cookieOptions?: CookieOptions;
+  public decode: Decode;
+  public fetch: FetchConnector;
+
+  private refreshTokenCookie: string;
+  private getTokens: GetTokens;
+  private clientATFetch?: Promise<string>;
 
   constructor(options: AuthClientOptions) {
-    const { accessToken, refreshToken } = options;
-
-    // Si es false se tratara de crear siempre un accessToken nuevo
-    this.shouldDecodeToken = true;
-
-    this.accessToken = {
-      name: accessToken.name || 'accessToken',
-      cookie: accessToken.cookie,
-      decode: accessToken.decode || (() => null)
-    };
-    this.refreshToken = {
-      cookie: refreshToken.cookie
-    };
-
+    // Public
+    this.cookie = options.cookie || 'a_t';
+    this.cookieOptions = options.cookieOptions;
+    this.decode = options.decode;
     this.fetch = options.fetchConnector;
-    this.getHeaders = options.getHeaders || getHeadersFn;
-    this.onLogout = options.onLogout || onLogoutFn;
-  }
-  public _logout = () =>
-    this.fetch.logout({ credentials: 'same-origin' }).then(json => {
-      this.removeAccessToken();
-      return json;
-    });
-  /**
-   * Cierra la sesión del usuario, esto significa eliminar el accessToken y
-   * refreshToken de las cookies
-   */
-  public logout(options: any) {
-    if (typeof window !== 'undefined') {
-      this.onLogout(this._logout, options);
-    }
+    // Private
+    this.refreshTokenCookie = options.refreshTokenCookie || 'r_t';
+    this.getTokens = options.getTokens || this._getTokens;
   }
   /**
-   * Obtiene el accessToken dentro de localStorage
-   * @return {string}
+   * Returns the accessToken from cookies
    */
   public getAccessToken() {
-    return localStorage.getItem(this.accessToken.name);
-  }
-  public decodeAccessToken(accessToken: string) {
-    if (!accessToken) return null;
-    return this.accessToken.decode(accessToken);
+    return Cookies.get(this.cookie) || null;
   }
   /**
-   * Agrega el accessToken a localStorage y lo devuelve
-   * @param {string} accessToken
-   * @return {(string|null)}
+   * Decodes an accessToken and returns his payload
+   */
+  public decodeAccessToken(accessToken: string) {
+    if (!accessToken) return null;
+    return this.decode(accessToken);
+  }
+  /**
+   * Adds an accessToken to a cookie and return the accessToken
    */
   public setAccessToken(accessToken: string) {
-    if (!accessToken) return null;
+    if (!accessToken) return;
 
-    if (this.getAccessToken() !== accessToken) {
-      localStorage.setItem(this.accessToken.name, accessToken);
-    }
+    Cookies.set(this.cookie, accessToken, {
+      expires: 365,
+      secure: location.protocol === 'https:',
+      ...this.getCookieOptions(accessToken)
+    });
 
     return accessToken;
   }
   /**
-   * Elimina el accessToken de localStorage
+   * Removes the accessToken from cookies
    */
   public removeAccessToken() {
-    localStorage.removeItem(this.accessToken.name);
+    Cookies.remove(this.cookie, this.getCookieOptions());
   }
   /**
-   * Se ignora el accessToken actual para que la siguiente vez se cree uno nuevo
+   * Logouts the user, this means remove both accessToken and refreshToken from
+   * cookies
    */
-  public ignoreCurrentAccessToken() {
-    this.shouldDecodeToken = false;
-  }
-  /**
-   * Obtiene el payload de un accessToken y válida que no este expirado y
-   * devuelve el token en caso de que sea válido o null
-   * @param {string} accessToken
-   * @return {(string|null)}
-   */
-  public verifyAccessToken(accessToken: string) {
-    if (accessToken && this.decodeAccessToken(accessToken)) {
-      return accessToken;
-    }
-    return null;
-  }
-  public async fetchClientAccessToken() {
-    try {
-      const data = await this.fetch.createAccessToken({
-        credentials: 'same-origin'
-      });
+  public async logout() {
+    if (typeof window === 'undefined') return;
 
-      this.shouldDecodeToken = true;
-      return this.setAccessToken(data.accessToken);
-    } catch (err) {
-      return null;
-    }
-  }
-  /**
-   * Devuelve el accessToken cuando se solicita en el servidor (SSR) desde las
-   * cookies. Si no se encuentra o no es un token válido y hay un refreshToken
-   * disponible consulta al servidor por un nuevo accessToken y lo devuelve
-   * @param {Object} req
-   * @return {{accessToken: string, setSession: (boolean|undefined)}} setSession
-   * se envía al cliente para que este lo agregue en las cookies debido a que no
-   * se pueden modificar las cookies en el SSR
-   */
-  public async getServerAccessToken(req) {
-    const refreshToken = req.signedCookies[this.refreshToken.cookie];
-    const accessToken = this.verifyAccessToken(
-      req.cookies[this.accessToken.cookie]
-    );
-
-    if (accessToken) return { accessToken };
-
-    if (!accessToken && refreshToken) {
-      try {
-        const data = await this.fetch.createAccessToken({
-          headers: req.headers
-        });
-
-        return {
-          accessToken: data.accessToken,
-          setSession: true
-        };
-      } catch (err) {
-        return refreshToken ? { removeTokens: true } : null;
-      }
-    }
-  }
-  /**
-   * Devuelve el accessToken cuando se solicita en el cliente desde
-   * localStorage. Si no se encuentra o no es un token válido consulta al
-   * servidor por un nuevo accessToken y lo devuelve
-   * @return {Promise} Se resuelve con el accessToken
-   */
-  public async getClientAccessToken() {
-    if (this.shouldDecodeToken) {
-      const _accessToken = this.getAccessToken();
-      // Si el cliente no tiene ningún accessToken en localStorage no se trata
-      // de crear uno nuevo
-      if (!_accessToken) return null;
-
-      const accessToken = this.verifyAccessToken(_accessToken);
-      if (accessToken) return accessToken;
-    }
-    // En este caso el accessToken dentro de localStorage ya es invalido y se
-    // consulta por uno nuevo, se reutiliza la promesa si se trata de crear el
-    // token multiples veces
-    if (this._clientATFetch) return this._clientATFetch;
-
-    this._clientATFetch = this.fetchClientAccessToken();
-
-    return this._clientATFetch.then(accessToken => {
-      this._clientATFetch = null;
-      return accessToken;
+    return this.fetch.logout({ credentials: 'same-origin' }).then(json => {
+      this.removeAccessToken();
+      return json;
     });
   }
   /**
-   * Agrega un accessToken creado en el servidor al localStorage, de ser
-   * necesario también hace una petición al servidor para agregarlo en las
-   * cookies y si no hay un refreshToken válido deslogea al usuario
-   * @param {Object} data
-   * @param {string} data.accessToken
-   * @param {boolean} data.removeTokens
-   * @param {boolean} data.setSession
+   * Returns a new accessToken
+   * @param req Sending a Request means the token will be created during SSR
    */
-  public async setSession(data) {
-    // No hay un token válido
-    if (data.removeTokens) {
-      return this.logout({ redirect: false });
-    }
+  public fetchAccessToken(req?: Request) {
+    return req ? this.fetchServerToken(req) : this.fetchClientToken();
+  }
+  /**
+   * Returns the accessToken on SSR from cookies, if no token exists or its
+   * invalid then it will fetch a new accessToken
+   */
+  private async fetchServerToken(req: Request) {
+    const tokens = this.getTokens(req);
 
-    // Agrega el token a localStorage
-    this.setAccessToken(data.accessToken);
+    if (!tokens) return;
 
-    // Agrega el token creado en el servidor a las cookies
-    if (data.setSession) {
-      return this.fetch.setAccessToken(data.accessToken, {
+    const accessToken = this.verifyAccessToken(tokens.accessToken);
+
+    if (accessToken) return accessToken;
+    if (!tokens.refreshToken) return;
+
+    const data = await this.fetch.createAccessToken({
+      headers: req.headers
+    });
+
+    return data.accessToken;
+  }
+  /**
+   * Returns the accessToken from cookies, if no token exists or its
+   * invalid then it will fetch a new accessToken
+   */
+  private async fetchClientToken() {
+    const _accessToken = this.getAccessToken();
+    // If the browser doesn't have an accessToken in cookies then don't try to
+    // create a new one
+    if (!_accessToken) return;
+
+    const accessToken = this.verifyAccessToken(_accessToken);
+    if (accessToken) return accessToken;
+    // In this case the accessToken in cookies is invalid and we should create
+    // a new one, the promise is reused for the case of when the method is
+    // called multiple times
+    if (this.clientATFetch) return this.clientATFetch;
+
+    this.clientATFetch = this.fetch
+      .createAccessToken({
         credentials: 'same-origin'
+      })
+      .then(data => {
+        this.clientATFetch = undefined;
+        this.setAccessToken(data.accessToken);
+
+        return data.accessToken;
       });
+
+    return this.clientATFetch;
+  }
+  /**
+   * Verifies and returns an accessToken if it's still valid
+   */
+  private verifyAccessToken(accessToken: string) {
+    if (accessToken && this.decodeAccessToken(accessToken)) {
+      return accessToken;
     }
-    return data;
+  }
+  /**
+   * Returns the cookie options that will be used to set an accessToken
+   */
+  private getCookieOptions(accessToken?: string) {
+    const { cookieOptions } = this;
+
+    return cookieOptions && typeof cookieOptions === 'function'
+      ? cookieOptions(accessToken)
+      : cookieOptions;
+  }
+  /**
+   * Gets the tokens from a Request
+   */
+  private _getTokens(req: Request) {
+    const parseCookie = require('cookie').parse;
+    const cookie = req.headers.get('cookie');
+    const cookies = cookie && parseCookie(cookie);
+
+    if (!cookies) return;
+
+    return {
+      refreshToken: cookies[this.refreshTokenCookie],
+      accessToken: cookies[this.cookie]
+    };
   }
 }

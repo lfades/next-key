@@ -1,5 +1,4 @@
-import { IncomingHttpHeaders } from 'http';
-import { StringAnyMap } from './interfaces';
+import { CookieOptions, StringAnyMap } from './interfaces';
 import AuthPayload from './payload';
 import AuthScope from './scope';
 
@@ -9,7 +8,6 @@ export interface AuthToken<I> {
 
 export interface IAccessToken {
   Auth: AuthServer;
-  cookie: string;
   /**
    * Creates a payload based in some data
    */
@@ -22,33 +20,26 @@ export interface IAccessToken {
    * Verifies an accessToken and returns its payload
    */
   verify(accessToken: string): StringAnyMap;
-  /**
-   * Returns the expiration date of an accessToken
-   */
-  getExpDate(): Date;
 }
 
 export interface IRefreshToken {
   Auth: AuthServer;
-  cookie: string;
+  cookie?: string;
+  cookieOptions?: CookieOptions | ((refreshToken: string) => CookieOptions);
+  /**
+   * Returns the payload in a refreshToken that can be used to create an
+   * accessToken
+   * @param reset Refresh the cookie of a refreshToken
+   */
+  getPayload(refreshToken: string, reset: () => void): Promise<StringAnyMap>;
   /**
    * Creates the refreshToken
    */
   create(data: StringAnyMap): Promise<string>;
   /**
-   * Returns the payload in a refreshToken that can be used to create an
-   * accessToken
-   * @param reset Refresh the cookie of the refreshToken
-   */
-  getPayload(refreshToken: string, reset: () => void): Promise<StringAnyMap>;
-  /**
    * Removes the refreshToken
    */
   remove(refreshToken: string): Promise<boolean> | boolean;
-  /**
-   * Returns the expiration date of a refreshToken
-   */
-  getExpDate(): Date;
 }
 
 export default class AuthServer {
@@ -139,52 +130,5 @@ export default class AuthServer {
       return this.refreshToken.remove(refreshToken);
     }
     return false;
-  }
-  /**
-   * Returns a cookie, it searchs in this order:
-   * signedCookies -> cookies -> null
-   */
-  public getCookie(
-    {
-      cookies,
-      signedCookies
-    }: {
-      cookies?: StringAnyMap;
-      signedCookies?: StringAnyMap;
-    },
-    cookie: string
-  ): string | null {
-    return (
-      (signedCookies && signedCookies[cookie]) ||
-      (cookies && cookies[cookie]) ||
-      null
-    );
-  }
-  /**
-   * Returns the accessToken from a JWT Token using the headers or cookies of a
-   * request, it will always look inside headers first
-   */
-  public getAccessToken(req: {
-    headers?: IncomingHttpHeaders;
-    cookies?: StringAnyMap;
-    signedCookies?: StringAnyMap;
-  }): string | null {
-    const { authorization = '' } = req.headers || {};
-    const accessToken =
-      (authorization &&
-        typeof authorization === 'string' &&
-        authorization.split(' ')[1]) ||
-      this.getCookie(req, this.accessToken.cookie);
-
-    return accessToken;
-  }
-  /**
-   * Returns the refreshToken from the cookies
-   */
-  public getRefreshToken(req: {
-    cookies?: StringAnyMap;
-    signedCookies?: StringAnyMap;
-  }) {
-    return this.getCookie(req, this.refreshToken.cookie);
   }
 }
