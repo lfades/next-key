@@ -6,6 +6,13 @@ export interface AuthToken<I> {
   new (Auth: AuthServer): I;
 }
 
+export interface AuthServerOptions {
+  AccessToken: AuthToken<IAccessToken>;
+  RefreshToken: AuthToken<IRefreshToken>;
+  payload: AuthPayload;
+  scope?: AuthScope;
+}
+
 export interface IAccessToken {
   Auth: AuthServer;
   /**
@@ -53,12 +60,7 @@ export default class AuthServer {
     RefreshToken,
     payload,
     scope
-  }: {
-    AccessToken: AuthToken<IAccessToken>;
-    RefreshToken: AuthToken<IRefreshToken>;
-    payload: AuthPayload;
-    scope?: AuthScope;
-  }) {
+  }: AuthServerOptions) {
     this.accessToken = new AccessToken(this);
     this.refreshToken = new RefreshToken(this);
 

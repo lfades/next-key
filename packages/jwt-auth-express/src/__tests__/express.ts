@@ -16,7 +16,7 @@ describe('Auth with Express', () => {
   const ONE_DAY = ONE_MINUTE * 60 * 24;
   const ONE_MONTH = ONE_DAY * 30;
   const ACCESS_TOKEN_SECRET = 'password';
-  const REFRESH_TOKEN_COOKIE = 'aei';
+  const REFRESH_TOKEN_COOKIE = 'r_t';
   const COOKIE_PARSER_SECRET = 'secret';
   const refreshTokens = new Map();
   const invalidTokenMsg = 'Invalid token';
@@ -57,11 +57,7 @@ describe('Auth with Express', () => {
   }
 
   class RefreshToken implements IRefreshToken {
-    public cookie: string;
-
-    constructor(public Auth: AuthServer) {
-      this.cookie = REFRESH_TOKEN_COOKIE;
-    }
+    constructor(public Auth: AuthServer) {}
 
     public async create({ id: userId }: { id: string }) {
       const id = Date.now().toString();
@@ -82,7 +78,7 @@ describe('Auth with Express', () => {
     }
   }
 
-  const authServer = new AuthServer({
+  const authServer = new AuthWithExpress({
     AccessToken,
     RefreshToken,
     payload: new AuthPayload({
@@ -94,8 +90,6 @@ describe('Auth with Express', () => {
       admin: 'a'
     })
   });
-
-  const authWithExpress = new AuthWithExpress(authServer);
 
   const expiredToken =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxODE0MTIzNCwiZXhwIjoxNTE4MTQyNDM0fQ.3ZRmx08htMX5KLsv8VhBVD8vjxHzWOiDDli7JXFf83Q';
@@ -119,24 +113,24 @@ describe('Auth with Express', () => {
   app.get('/login', async (_req, res) => {
     const data = await authServer.createTokens(userPayload);
 
-    authWithExpress.setRefreshToken(res, data.refreshToken);
+    authServer.setRefreshToken(res, data.refreshToken);
 
     res.json(data);
   });
 
   app.get('/refreshToken', (req, res) => {
-    res.json({ refreshToken: authWithExpress.getRefreshToken(req) });
+    res.json({ refreshToken: authServer.getRefreshToken(req) });
   });
 
   app.get('/accessToken', (req, res) => {
-    res.json({ accessToken: authWithExpress.getAccessToken(req) });
+    res.json({ accessToken: authServer.getAccessToken(req) });
   });
 
-  app.get('/logout', authWithExpress.logout);
+  app.get('/logout', authServer.logout);
 
-  app.get('/new/access_token', authWithExpress.createAccessToken);
+  app.get('/new/access_token', authServer.refreshAccessToken);
 
-  app.get('/authorize', authWithExpress.authorize, (req, res) => {
+  app.get('/authorize', authServer.authorize, (req, res) => {
     res.json({ user: req.user });
   });
 
