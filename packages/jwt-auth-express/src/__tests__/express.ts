@@ -1,29 +1,25 @@
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import {
+import request from 'supertest';
+import AuthWithExpress, {
   AuthPayload,
   AuthScope,
-  AuthServer,
   IAccessToken,
   IRefreshToken
-} from 'jwt-auth-server';
-import request from 'supertest';
-import AuthWithExpress from '../';
+} from '../';
 
 describe('Auth with Express', () => {
   const ONE_MINUTE = 1000 * 60;
   const ONE_DAY = ONE_MINUTE * 60 * 24;
   const ONE_MONTH = ONE_DAY * 30;
   const ACCESS_TOKEN_SECRET = 'password';
-  const REFRESH_TOKEN_COOKIE = 'r_t';
+  const REFRESH_TOKEN_COOKIE = 'aei';
   const COOKIE_PARSER_SECRET = 'secret';
   const refreshTokens = new Map();
   const invalidTokenMsg = 'Invalid token';
 
   class AccessToken implements IAccessToken {
-    constructor(public Auth: AuthServer) {}
-
     public buildPayload({
       id,
       companyId,
@@ -57,7 +53,12 @@ describe('Auth with Express', () => {
   }
 
   class RefreshToken implements IRefreshToken {
-    constructor(public Auth: AuthServer) {}
+    public cookie: string = REFRESH_TOKEN_COOKIE;
+    public cookieOptions() {
+      return {
+        signed: true
+      };
+    }
 
     public async create({ id: userId }: { id: string }) {
       const id = Date.now().toString();
@@ -83,8 +84,8 @@ describe('Auth with Express', () => {
   });
 
   const authServer = new AuthWithExpress({
-    AccessToken,
-    RefreshToken,
+    accessToken: new AccessToken(),
+    refreshToken: new RefreshToken(),
     payload: new AuthPayload({
       uId: 'id',
       cId: 'companyId',
@@ -147,9 +148,38 @@ describe('Auth with Express', () => {
     login = await agent.get('/login');
   });
 
+  it('Uses cookie defaults for the refreshToken', async () => {
+    const { cookie, cookieOptions } = authServer.refreshToken;
+
+    authServer.refreshToken.cookie = undefined;
+    authServer.refreshToken.cookieOptions = undefined;
+
+    const newLogin = await get('/login');
+
+    expect(newLogin.status).toBe(200);
+    expect(newLogin.get('Set-Cookie')).toEqual([
+      expect.stringContaining('r_t=')
+    ]);
+    expect(newLogin.body).toEqual({
+      refreshToken: expect.any(String),
+      accessToken: expect.any(String),
+      payload: tokenPayload
+    });
+
+    const response = await get('/refreshToken');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ refreshToken: newLogin.body.refreshToken });
+
+    authServer.refreshToken.cookie = cookie;
+    authServer.refreshToken.cookieOptions = cookieOptions;
+  });
+
   it('Adds the refreshToken as cookie', () => {
     expect(login.status).toBe(200);
-    expect(login.get('Set-Cookie')).toEqual([expect.any(String)]);
+    expect(login.get('Set-Cookie')).toEqual([
+      expect.stringContaining(REFRESH_TOKEN_COOKIE + '=')
+    ]);
     expect(login.body).toEqual({
       refreshToken: expect.any(String),
       accessToken: expect.any(String),

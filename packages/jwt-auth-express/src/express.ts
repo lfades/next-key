@@ -88,15 +88,16 @@ export default class AuthWithExpress extends AuthServer {
 
     if (refreshToken === null) {
       res.clearCookie(cookie);
-    } else if (refreshToken) {
-      const cookieOptions =
-        co && typeof co === 'function' ? co(refreshToken) : co;
-
-      res.cookie(cookie, refreshToken, {
-        httpOnly: true,
-        signed: true,
-        ...cookieOptions
-      });
     }
+    if (!refreshToken) return;
+
+    const cookieOptions =
+      co && typeof co === 'function' ? co(refreshToken) : co;
+
+    res.cookie(cookie, refreshToken, {
+      httpOnly: true,
+      signed: true,
+      ...cookieOptions
+    });
   }
 }
