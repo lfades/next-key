@@ -1,57 +1,19 @@
-import { CookieOptions, StringAnyMap } from './interfaces';
+import {
+  AuthServerOptions,
+  IAccessToken,
+  IAuthPayload,
+  IAuthScope,
+  IRefreshToken,
+  StringAnyMap
+} from './interfaces';
 import AuthPayload from './payload';
 import AuthScope from './scope';
-
-export interface AuthToken<I> {
-  new (Auth: AuthServer): I;
-}
-
-export interface AuthServerOptions {
-  accessToken: IAccessToken;
-  refreshToken: IRefreshToken;
-  payload?: AuthPayload;
-  scope?: AuthScope;
-}
-
-export interface IAccessToken {
-  /**
-   * Creates a payload based in some data
-   */
-  buildPayload(data: StringAnyMap): StringAnyMap;
-  /**
-   * Creates the accessToken
-   */
-  create(payload: StringAnyMap): string;
-  /**
-   * Verifies an accessToken and returns its payload
-   */
-  verify(accessToken: string): StringAnyMap;
-}
-
-export interface IRefreshToken {
-  cookie?: string;
-  cookieOptions?: CookieOptions | ((refreshToken: string) => CookieOptions);
-  /**
-   * Returns the payload in a refreshToken that can be used to create an
-   * accessToken
-   * @param reset Refresh the cookie of a refreshToken
-   */
-  getPayload(refreshToken: string, reset: () => void): Promise<StringAnyMap>;
-  /**
-   * Creates the refreshToken
-   */
-  create(data: StringAnyMap): Promise<string>;
-  /**
-   * Removes the refreshToken
-   */
-  remove(refreshToken: string): Promise<boolean> | boolean;
-}
 
 export default class AuthServer {
   public accessToken: IAccessToken;
   public refreshToken: IRefreshToken;
-  public payload: AuthPayload;
-  public scope: AuthScope;
+  public payload: IAuthPayload;
+  public scope: IAuthScope;
 
   constructor({
     accessToken,
