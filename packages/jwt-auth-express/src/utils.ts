@@ -9,7 +9,7 @@ export interface Result {
   [key: string]: any;
 }
 
-export const asyncMiddleware = (fn: Fn): Req<any> => (req, res) => {
+export const asyncMiddleware = (fn: Fn): Req<void> => (req, res) => {
   const error = (err: Result = {}) => {
     const { errorMessage = 'Invalid token', errorCode = 400 } = err;
 

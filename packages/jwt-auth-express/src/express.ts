@@ -15,6 +15,34 @@ const RT_COOKIE = 'r_t';
  * Authenticate requests with Express
  */
 export default class AuthWithExpress extends AuthServer {
+  /**
+   * Creates an accessToken based in a refreshToken present in cookies
+   */
+  public refreshAccessToken = asyncMiddleware(async (req, res) => {
+    const refreshToken = this.getRefreshToken(req);
+    const reset = () => this.setRefreshToken(res, refreshToken);
+    const payload =
+      refreshToken && (await this.getPayload(refreshToken, reset));
+
+    if (!payload) return;
+
+    const { accessToken } = this.createAccessToken(payload);
+    return { accessToken };
+  });
+  /**
+   * Logouts an user
+   */
+  public logout = asyncMiddleware(async (req: Request, res: Response) => {
+    const refreshToken = this.getRefreshToken(req);
+
+    if (!refreshToken) return { done: false };
+
+    await this.removeRefreshRoken(refreshToken);
+    this.setRefreshToken(res, null);
+
+    return { done: true };
+  });
+
   constructor(options: AuthServerOptions) {
     super(options);
   }
@@ -43,33 +71,6 @@ export default class AuthWithExpress extends AuthServer {
     );
   }
   /**
-   * Creates an accessToken based in a refreshToken present in cookies
-   */
-  public refreshAccessToken = asyncMiddleware(async (req, res) => {
-    const refreshToken = this.getRefreshToken(req);
-    const reset = () => this.setRefreshToken(res, refreshToken);
-    const payload =
-      refreshToken && (await this.getPayload(refreshToken, reset));
-
-    if (!payload) return;
-
-    const { accessToken } = this.createAccessToken(payload);
-    return { accessToken };
-  });
-  /**
-   * Logouts an user
-   */
-  public logout = asyncMiddleware(async (req: Request, res: Response) => {
-    const refreshToken = this.getRefreshToken(req);
-
-    if (!refreshToken) return { done: false };
-
-    await this.removeRefreshRoken(refreshToken);
-    this.setRefreshToken(res, null);
-
-    return { done: true };
-  });
-  /**
    * Assigns to req.user the payload of an accessToken or null
    */
   public authorize: RequestHandler = (req: Request, _res, next) => {
@@ -86,9 +87,7 @@ export default class AuthWithExpress extends AuthServer {
   public setRefreshToken(res: Response, refreshToken: string | null) {
     const { cookie = RT_COOKIE, cookieOptions: co } = this.refreshToken;
 
-    if (refreshToken === null) {
-      res.clearCookie(cookie);
-    }
+    if (refreshToken === null) res.clearCookie(cookie);
     if (!refreshToken) return;
 
     const cookieOptions =
