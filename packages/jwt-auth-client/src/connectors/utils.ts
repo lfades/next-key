@@ -25,7 +25,7 @@ export class FetchError extends Error {
 
   constructor(
     res: Response,
-    data: { message: string; code?: string | number }
+    data: { message?: string; code?: string | number }
   ) {
     super(data.message || res.statusText);
 

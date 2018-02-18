@@ -8,6 +8,7 @@ import AuthWithExpress, {
   Payload,
   Scope
 } from '../';
+import { BAD_REQUEST_CODE, BAD_REQUEST_MESSAGE } from '../utils';
 
 describe('Auth with Express', () => {
   const ONE_MINUTE = 1000 * 60;
@@ -17,7 +18,6 @@ describe('Auth with Express', () => {
   const REFRESH_TOKEN_COOKIE = 'aei';
   const COOKIE_PARSER_SECRET = 'secret';
   const refreshTokens = new Map();
-  const invalidTokenMsg = 'Invalid token';
 
   class AccessToken implements AuthAccessToken {
     public buildPayload({
@@ -229,8 +229,8 @@ describe('Auth with Express', () => {
     it('Returns an error if no refreshToken is present', async () => {
       const response = await get('/new/access_token').set('Cookie', '');
 
-      expect(response.status).toBe(400);
-      expect(response.body).toEqual({ message: invalidTokenMsg });
+      expect(response.status).toBe(BAD_REQUEST_CODE);
+      expect(response.body).toEqual({ message: BAD_REQUEST_MESSAGE });
     });
 
     it('Returns an error with an invalid refreshToken', async () => {
@@ -239,8 +239,8 @@ describe('Auth with Express', () => {
         `${REFRESH_TOKEN_COOKIE}=xxx;`
       );
 
-      expect(response.status).toBe(400);
-      expect(response.body).toEqual({ message: invalidTokenMsg });
+      expect(response.status).toBe(BAD_REQUEST_CODE);
+      expect(response.body).toEqual({ message: BAD_REQUEST_MESSAGE });
     });
   });
 
