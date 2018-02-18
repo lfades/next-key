@@ -1,19 +1,19 @@
 import {
+  AuthAccessToken,
+  AuthPayload,
+  AuthRefreshToken,
+  AuthScope,
   AuthServerOptions,
-  IAccessToken,
-  IAuthPayload,
-  IAuthScope,
-  IRefreshToken,
   StringAnyMap
 } from './interfaces';
-import AuthPayload from './payload';
-import AuthScope from './scope';
+import Payload from './payload';
+import Scope from './scope';
 
 export default class AuthServer {
-  public accessToken: IAccessToken;
-  public refreshToken: IRefreshToken;
-  public payload: IAuthPayload;
-  public scope: IAuthScope;
+  public accessToken: AuthAccessToken;
+  public refreshToken: AuthRefreshToken;
+  public payload: AuthPayload;
+  public scope: AuthScope;
 
   constructor({
     accessToken,
@@ -24,8 +24,8 @@ export default class AuthServer {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
 
-    this.payload = payload || new AuthPayload();
-    this.scope = scope || new AuthScope();
+    this.payload = payload || new Payload();
+    this.scope = scope || new Scope();
   }
   /**
    * Creates a new accessToken

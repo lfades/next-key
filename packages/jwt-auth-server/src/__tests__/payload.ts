@@ -1,7 +1,7 @@
-import AuthPayload, { isEmpty } from '../payload';
+import Payload, { isEmpty } from '../payload';
 
 describe('Auth Payload', () => {
-  const payload = new AuthPayload({
+  const payload = new Payload({
     uId: 'id',
     cId: 'companyId',
     scope: 'scope'
@@ -47,7 +47,7 @@ describe('Auth Payload', () => {
   });
 
   it('Always returns the same object with empty call to constructor', () => {
-    const empty = new AuthPayload();
+    const empty = new Payload();
 
     expect(empty.create(user)).toEqual(user);
     expect(empty.parse(reverseUser)).toEqual(reverseUser);

@@ -26,7 +26,10 @@
       "allow-leading-underscore",
       "allow-pascal-case"
     ],
-    "interface-name": false,
+    "interface-name": [
+      true,
+      "never-prefix"
+    ],
     "array-type": false,
     "object-literal-sort-keys": false,
     "no-implicit-dependencies": false,

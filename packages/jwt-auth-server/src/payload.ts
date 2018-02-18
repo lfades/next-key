@@ -1,4 +1,4 @@
-import { IAuthPayload, StringAnyMap, StringStringMap } from './interfaces';
+import { AuthPayload, StringAnyMap, StringStringMap } from './interfaces';
 
 export const isEmpty = (value: any) =>
   value === undefined ||
@@ -8,7 +8,7 @@ export const isEmpty = (value: any) =>
 
 export type PayloadEntry = [string, string];
 
-export default class AuthPayload implements IAuthPayload {
+export default class Payload implements AuthPayload {
   private PAYLOAD: PayloadEntry[];
   private REVERSE_PAYLOAD: PayloadEntry[];
 

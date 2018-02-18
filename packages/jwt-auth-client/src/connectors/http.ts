@@ -1,5 +1,5 @@
 import fetch from 'isomorphic-unfetch';
-import { FetchConnector, FetchError } from './utils';
+import { FetchConnector, FetchError, NetworkError } from './utils';
 
 export interface HttpConnectorOptions {
   createAccessTokenUrl: string;
@@ -28,12 +28,20 @@ export default class HttpConnector implements FetchConnector {
     return this.fetch(this.logoutUrl, fetchOptions);
   }
 
-  private fetch(url: string, fetchOptions: RequestInit) {
-    return fetch(url, fetchOptions).then(res => {
-      if (res.status === 200) {
-        return res.json();
-      }
-      throw new FetchError(res);
-    });
+  private async fetch(url: string, fetchOptions: RequestInit) {
+    let res: Response;
+
+    try {
+      res = await fetch(url, fetchOptions);
+    } catch (err) {
+      throw new NetworkError();
+    }
+
+    if (res.status >= 200 && res.status < 300) {
+      return res.json();
+    }
+
+    const errorData = await res.json();
+    throw new FetchError(res, errorData);
   }
 }

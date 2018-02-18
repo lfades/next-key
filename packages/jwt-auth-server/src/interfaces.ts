@@ -1,11 +1,11 @@
 export interface AuthServerOptions {
-  accessToken: IAccessToken;
-  refreshToken: IRefreshToken;
-  payload?: IAuthPayload;
-  scope?: IAuthScope;
+  accessToken: AuthAccessToken;
+  refreshToken: AuthRefreshToken;
+  payload?: AuthPayload;
+  scope?: AuthScope;
 }
 
-export interface IAccessToken {
+export interface AuthAccessToken {
   /**
    * Creates a payload based in some data
    */
@@ -20,7 +20,7 @@ export interface IAccessToken {
   verify(accessToken: string): StringAnyMap;
 }
 
-export interface IRefreshToken {
+export interface AuthRefreshToken {
   cookie?: string;
   cookieOptions?: CookieOptions | ((refreshToken: string) => CookieOptions);
   /**
@@ -39,12 +39,12 @@ export interface IRefreshToken {
   remove(refreshToken: string): Promise<boolean> | boolean;
 }
 
-export interface IAuthScope {
+export interface AuthScope {
   create(scope: string[]): string;
   parse(scope: string): string[];
 }
 
-export interface IAuthPayload {
+export interface AuthPayload {
   create(payload: StringAnyMap): StringAnyMap;
   parse(reversePayload: StringAnyMap): StringAnyMap;
 }

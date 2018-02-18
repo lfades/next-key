@@ -3,10 +3,10 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import AuthWithExpress, {
-  AuthPayload,
-  AuthScope,
-  IAccessToken,
-  IRefreshToken
+  AuthAccessToken,
+  AuthRefreshToken,
+  Payload,
+  Scope
 } from '../';
 
 describe('Auth with Express', () => {
@@ -19,7 +19,7 @@ describe('Auth with Express', () => {
   const refreshTokens = new Map();
   const invalidTokenMsg = 'Invalid token';
 
-  class AccessToken implements IAccessToken {
+  class AccessToken implements AuthAccessToken {
     public buildPayload({
       id,
       companyId,
@@ -52,7 +52,7 @@ describe('Auth with Express', () => {
     }
   }
 
-  class RefreshToken implements IRefreshToken {
+  class RefreshToken implements AuthRefreshToken {
     public cookie: string = REFRESH_TOKEN_COOKIE;
     public cookieOptions() {
       return {
@@ -79,14 +79,14 @@ describe('Auth with Express', () => {
     }
   }
 
-  const authScope = new AuthScope({
+  const authScope = new Scope({
     admin: 'a'
   });
 
   const authServer = new AuthWithExpress({
     accessToken: new AccessToken(),
     refreshToken: new RefreshToken(),
-    payload: new AuthPayload({
+    payload: new Payload({
       uId: 'id',
       cId: 'companyId',
       scope: 'scope'

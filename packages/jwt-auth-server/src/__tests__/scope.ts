@@ -1,7 +1,7 @@
-import { AuthScope } from '../';
+import { Scope } from '../';
 
 describe('Auth Scope', () => {
-  const scope = new AuthScope({
+  const scope = new Scope({
     read: 'r',
     write: 'w',
     admin: 'a',

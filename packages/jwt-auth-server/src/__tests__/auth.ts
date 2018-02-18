@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
 import {
-  AuthPayload,
-  AuthScope,
+  AuthAccessToken,
+  AuthRefreshToken,
   AuthServer,
-  IAccessToken,
-  IRefreshToken
+  Payload,
+  Scope
 } from '../';
 
 describe('Auth Server', () => {
@@ -14,7 +14,7 @@ describe('Auth Server', () => {
   const ACCESS_TOKEN_SECRET = 'password';
   const refreshTokens = new Map();
 
-  class AccessToken implements IAccessToken {
+  class AccessToken implements AuthAccessToken {
     public buildPayload({
       id,
       companyId,
@@ -47,7 +47,7 @@ describe('Auth Server', () => {
     }
   }
 
-  class RefreshToken implements IRefreshToken {
+  class RefreshToken implements AuthRefreshToken {
     public async getPayload(refreshToken: string, reset: () => any) {
       reset();
       return refreshTokens.get(refreshToken);
@@ -67,13 +67,13 @@ describe('Auth Server', () => {
     }
   }
 
-  const authPayload = new AuthPayload({
+  const authPayload = new Payload({
     uId: 'id',
     cId: 'companyId',
     scope: 'scope'
   });
 
-  const authScope = new AuthScope({
+  const authScope = new Scope({
     admin: 'a'
   });
 
@@ -107,8 +107,8 @@ describe('Auth Server', () => {
       refreshToken: new RefreshToken()
     });
 
-    expect(auth.scope).toBeInstanceOf(AuthScope);
-    expect(auth.payload).toBeInstanceOf(AuthPayload);
+    expect(auth.scope).toBeInstanceOf(Scope);
+    expect(auth.payload).toBeInstanceOf(Payload);
   });
 
   it('creates an accessToken', () => {
