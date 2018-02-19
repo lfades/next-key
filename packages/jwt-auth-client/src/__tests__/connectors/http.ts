@@ -21,16 +21,21 @@ describe('Http connector', () => {
     res.json({ accessToken });
   });
 
-  app.get('/accessToken/error', () => {
-    throw new Error();
-  });
-
-  app.get('/accessToken/customErrorObj', (_req, res) => {
-    res.status(400).json({ message: 'failed', code: 'it_failed' });
-  });
-
   app.get('/logout', (_req, res) => {
     res.json({ done: true });
+  });
+
+  app.get('/error', (_req, res) => {
+    res.statusMessage = 'failed';
+    res.status(400).end();
+  });
+
+  app.get('/customErrorMsg', (_req, res) => {
+    res.status(400).json({ message: 'failed' });
+  });
+
+  app.get('/customErrorCode', (_req, res) => {
+    res.status(400).json({ code: 'it_failed' });
   });
 
   beforeAll(() => {
@@ -53,32 +58,42 @@ describe('Http connector', () => {
     expect(data).toEqual({ done: true });
   });
 
-  it('Throws a FetchError for custom error object response', async () => {
+  it('Throws a FetchError with a custom error object', async () => {
     const c = new HttpConnector({
-      createAccessTokenUrl: URL + '/accessToken/customErrorObj',
-      logoutUrl: URL + '/logout'
+      createAccessTokenUrl: URL + '/customErrorMsg',
+      logoutUrl: URL + '/customErrorCode'
     });
 
-    expect.assertions(5);
+    expect.assertions(10);
 
     try {
       await c.createAccessToken({});
     } catch (e) {
       expect(e.name).toBe('FetchError');
       expect(e.status).toBe(400);
-      expect(e.code).toBe('it_failed');
+      expect(e.code).toBe(400);
       expect(e.message).toBe('failed');
-      expect(e.res).toBeTruthy();
+      expect(e.res).toBeDefined();
+    }
+
+    try {
+      await c.logout({});
+    } catch (e) {
+      expect(e.name).toBe('FetchError');
+      expect(e.status).toBe(400);
+      expect(e.code).toBe('it_failed');
+      expect(typeof e.message).toBe('string');
+      expect(e.res).toBeDefined();
     }
   });
 
   it('Throws a NetworkError for invalid requests', async () => {
     const c = new HttpConnector({
-      createAccessTokenUrl: URL + '/accessToken/error',
-      logoutUrl: URL + '/logout'
+      createAccessTokenUrl: URL + '/error',
+      logoutUrl: 'invalid url'
     });
 
-    expect.assertions(3);
+    expect.assertions(8);
 
     try {
       await c.createAccessToken({});
@@ -86,6 +101,16 @@ describe('Http connector', () => {
       expect(e.name).toBe('NetworkError');
       expect(e.code).toBe(NETWORK_ERROR_CODE);
       expect(e.message).toBe(NETWORK_ERROR_MESSAGE);
+      expect(e.res).toBeDefined();
+    }
+
+    try {
+      await c.logout({});
+    } catch (e) {
+      expect(e.name).toBe('NetworkError');
+      expect(e.code).toBe(NETWORK_ERROR_CODE);
+      expect(e.message).toBe(NETWORK_ERROR_MESSAGE);
+      expect(e.res).toBeUndefined();
     }
   });
 });

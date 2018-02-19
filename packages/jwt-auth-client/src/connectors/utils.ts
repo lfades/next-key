@@ -40,11 +40,14 @@ export class FetchError extends Error {
  */
 export class NetworkError extends Error {
   public code: string;
+  public res?: Response;
 
-  constructor() {
+  constructor(res?: Response) {
     super(NETWORK_ERROR_MESSAGE);
+
     this.name = 'NetworkError';
     this.code = NETWORK_ERROR_CODE;
-    this.constructor = NetworkError;
+
+    if (res) this.res = res;
   }
 }
