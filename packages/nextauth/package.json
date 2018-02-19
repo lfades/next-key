@@ -18,10 +18,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lfades/jwt-auth.git"
+    "url": "https://github.com/lfades/nextauth.git"
   },
   "bugs": {
-    "url": "https://github.com/lfades/jwt-auth/issues"
+    "url": "https://github.com/lfades/nextauth/issues"
   },
   "prettier": {
     "singleQuote": true
