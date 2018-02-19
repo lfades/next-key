@@ -14,10 +14,10 @@ export type Logout = (
   options: any
 ) => void;
 
-export type Decode = (accessToken: string) => object | null;
+export type Decode = (accessToken: string) => object | null | void;
 
 export interface AuthClientOptions {
-  cookie: string;
+  cookie?: string;
   cookieOptions?: CookieOptions;
   decode: Decode;
   fetchConnector: FetchConnector;
@@ -52,11 +52,10 @@ export default class AuthClient {
     return Cookies.get(this.cookie) || null;
   }
   /**
-   * Decodes an accessToken and returns his payload
+   * Decodes an accessToken and returns his payload or null
    */
   public decodeAccessToken(accessToken: string) {
-    if (!accessToken) return null;
-    return this.decode(accessToken);
+    return (accessToken && this.decode(accessToken)) || null;
   }
   /**
    * Adds an accessToken to a cookie and return the accessToken
@@ -156,7 +155,8 @@ export default class AuthClient {
     }
   }
   /**
-   * Returns the cookie options that will be used to set an accessToken
+   * Returns the cookie options that will be used to set an accessToken,
+   * accessToken will be undefined when removing a cookie
    */
   private getCookieOptions(accessToken?: string) {
     const { cookieOptions } = this;
