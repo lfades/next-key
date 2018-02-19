@@ -16,6 +16,6 @@ module.exports = {
   "mapCoverage": true,
   "coverageDirectory": "coverage",
   "collectCoverageFrom": [
-    "src/**"
+    "src/**.ts"
   ]
 }

@@ -3,18 +3,15 @@ import { FetchConnector, FetchError, NetworkError } from './utils';
 
 export interface HttpConnectorOptions {
   createAccessTokenUrl: string;
-  setAccessTokenUrl: string;
   logoutUrl: string;
 }
 
 export default class HttpConnector implements FetchConnector {
-  public createAccessTokenUrl: string;
-  public setAccessTokenUrl: string;
-  public logoutUrl: string;
+  private createAccessTokenUrl: string;
+  private logoutUrl: string;
 
   constructor(options: HttpConnectorOptions) {
     this.createAccessTokenUrl = options.createAccessTokenUrl;
-    this.setAccessTokenUrl = options.setAccessTokenUrl;
     this.logoutUrl = options.logoutUrl;
   }
 
@@ -41,7 +38,13 @@ export default class HttpConnector implements FetchConnector {
       return res.json();
     }
 
-    const errorData = await res.json();
-    throw new FetchError(res, errorData);
+    const contentType = res.headers.get('Content-Type');
+
+    if (contentType && contentType.includes('application/json')) {
+      const errorData = await res.json();
+      throw new FetchError(res, errorData);
+    }
+
+    throw new NetworkError();
   }
 }

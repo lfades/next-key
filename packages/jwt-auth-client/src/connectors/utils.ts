@@ -29,9 +29,10 @@ export class FetchError extends Error {
   ) {
     super(data.message || res.statusText);
 
-    this.res = res;
+    this.name = 'FetchError';
     this.status = res.status;
     this.code = data.code || res.status;
+    this.res = res;
   }
 }
 /**
@@ -42,7 +43,8 @@ export class NetworkError extends Error {
 
   constructor() {
     super(NETWORK_ERROR_MESSAGE);
-
+    this.name = 'NetworkError';
     this.code = NETWORK_ERROR_CODE;
+    this.constructor = NetworkError;
   }
 }
