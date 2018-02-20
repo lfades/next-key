@@ -1,7 +1,7 @@
 {
   "name": "next-key",
-  "version": "1.0.1",
-  "description": "Next client HOC for authentication",
+  "version": "1.0.2",
+  "description": "Next.js HOC for authentication",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -22,9 +22,6 @@
   },
   "bugs": {
     "url": "https://github.com/lfades/next-key/issues"
-  },
-  "prettier": {
-    "singleQuote": true
   },
   "devDependencies": {
     "@types/jest": "^22.1.3",

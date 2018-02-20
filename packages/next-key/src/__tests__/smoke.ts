@@ -1,6 +1,6 @@
-import withAuth, { AuthClient } from '../';
+import { AuthClient, withAuth } from '../';
 
 it('Should have the required exports', () => {
-  expect(withAuth).toBeDefined();
   expect(AuthClient).toBeDefined();
+  expect(withAuth).toBeDefined();
 });
