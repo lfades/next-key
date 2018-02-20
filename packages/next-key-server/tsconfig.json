@@ -9,7 +9,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitAny": true,
-    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "declaration": true,
     "pretty": true,
     "moduleResolution": "node",
