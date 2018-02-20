@@ -1,3 +1,4 @@
+import { AuthClient } from 'next-key-client';
 import PropTypes from 'prop-types';
 import React from 'react';
 import {
@@ -13,7 +14,9 @@ function getDisplayName(Component: React.ComponentType) {
   return Component.displayName || Component.name || 'Unknown';
 }
 
-export default function withApollo(options: WithAuthOptions) {
+export default function withAuth(options: WithAuthOptions) {
+  const auth = new AuthClient(options.client);
+
   const getAuthProps: GetAuthProps = async ({ req }) => {
     const props: WithAuthProps = {};
 
@@ -21,6 +24,15 @@ export default function withApollo(options: WithAuthOptions) {
       props.accessToken = auth.getAccessToken();
       return props;
     }
+
+    const accessToken = await auth.fetchAccessToken(req);
+
+    if (accessToken) {
+      props.accessToken = accessToken;
+      req.headers.Authorization = 'Bearer ' + accessToken;
+    }
+
+    return props;
   };
 
   const withAuthHOC = (Child: any) => {

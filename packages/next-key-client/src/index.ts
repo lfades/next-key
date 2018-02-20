@@ -1,3 +1,6 @@
-export { default as AuthClient } from './auth';
+import { AuthClient } from './auth';
+
+export * from './auth';
+export * from './connectors/utils';
 export { default as HttpConnector } from './connectors/http';
-export { FetchConnector, FetchError, NetworkError } from './connectors/utils';
+export default AuthClient;

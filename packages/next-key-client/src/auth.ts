@@ -9,11 +9,6 @@ export type GetTokens = (
   req: any
 ) => { refreshToken: string; accessToken: string } | void;
 
-export type Logout = (
-  logout: () => Promise<{ done: boolean }>,
-  options: any
-) => void;
-
 export type Decode = (accessToken: string) => object | null | void;
 
 export interface AuthClientOptions {
@@ -25,7 +20,7 @@ export interface AuthClientOptions {
   getTokens?: GetTokens;
 }
 
-export default class AuthClient {
+export class AuthClient {
   public cookie: string;
   public cookieOptions?: CookieOptions;
   public decode: Decode;
@@ -49,7 +44,7 @@ export default class AuthClient {
    * Returns the accessToken from cookies
    */
   public getAccessToken() {
-    return Cookies.get(this.cookie) || null;
+    return Cookies.get(this.cookie);
   }
   /**
    * Decodes an accessToken and returns his payload or null

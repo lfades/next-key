@@ -93,7 +93,7 @@ describe('Auth Client', () => {
   });
 
   it('Returns the accessToken from cookies', () => {
-    expect(authClient.getAccessToken()).toBeNull();
+    expect(authClient.getAccessToken()).toBeUndefined();
 
     authClient.setAccessToken(accessToken);
 
@@ -105,7 +105,7 @@ describe('Auth Client', () => {
 
     expect(authClient.getAccessToken()).toBe(accessToken);
     expect(authClient.removeAccessToken()).toBeUndefined();
-    expect(authClient.getAccessToken()).toBeNull();
+    expect(authClient.getAccessToken()).toBeUndefined();
   });
 
   it('Decodes an accessToken', () => {
@@ -124,7 +124,7 @@ describe('Auth Client', () => {
 
     expect(authClient.getAccessToken()).toBe(accessToken);
     expect(await authClient.logout()).toEqual({ done: true });
-    expect(authClient.getAccessToken()).toBeNull();
+    expect(authClient.getAccessToken()).toBeUndefined();
   });
 
   describe('fetch a new accessToken', () => {
