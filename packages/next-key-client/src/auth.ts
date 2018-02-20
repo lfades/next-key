@@ -1,3 +1,4 @@
+import { IncomingMessage } from 'http';
 import Cookies, { CookieAttributes } from 'js-cookie';
 import { FetchConnector } from './connectors/utils';
 
@@ -88,14 +89,14 @@ export class AuthClient {
    * Returns a new accessToken
    * @param req Sending a Request means the token will be created during SSR
    */
-  public fetchAccessToken(req?: Request) {
+  public fetchAccessToken(req?: IncomingMessage) {
     return req ? this.fetchServerToken(req) : this.fetchClientToken();
   }
   /**
    * Returns the accessToken on SSR from cookies, if no token exists or its
    * invalid then it will fetch a new accessToken
    */
-  private async fetchServerToken(req: Request) {
+  private async fetchServerToken(req: IncomingMessage) {
     const tokens = this.getTokens(req);
 
     if (!tokens) return;
@@ -106,7 +107,8 @@ export class AuthClient {
     if (!tokens.refreshToken) return;
 
     const data = await this.fetch.createAccessToken({
-      headers: req.headers
+      // This may have side effects
+      headers: req.headers as { [key: string]: string }
     });
 
     return data.accessToken;
@@ -163,9 +165,9 @@ export class AuthClient {
   /**
    * Gets the tokens from a Request
    */
-  private _getTokens(req: Request) {
+  private _getTokens(req: IncomingMessage) {
     const parseCookie = require('cookie').parse;
-    const cookie = req.headers.get('cookie');
+    const { cookie } = req.headers;
     const cookies = cookie && parseCookie(cookie);
 
     if (!cookies) return;
