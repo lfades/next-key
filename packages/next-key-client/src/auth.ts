@@ -7,8 +7,8 @@ export type CookieOptions =
   | ((accessToken?: string) => CookieAttributes);
 
 export type GetTokens = (
-  req: any
-) => { refreshToken: string; accessToken: string } | void;
+  req: IncomingMessage
+) => { refreshToken?: string; accessToken?: string } | void;
 
 export type Decode = (accessToken: string) => object | null | void;
 
@@ -99,12 +99,11 @@ export class AuthClient {
   private async fetchServerToken(req: IncomingMessage) {
     const tokens = this.getTokens(req);
 
-    if (!tokens) return;
+    if (!tokens || !tokens.refreshToken) return;
 
-    const accessToken = this.verifyAccessToken(tokens.accessToken);
+    const accessToken = this.verifyAccessToken(tokens.accessToken || '');
 
     if (accessToken) return accessToken;
-    if (!tokens.refreshToken) return;
 
     const data = await this.fetch.createAccessToken({
       // This may have side effects

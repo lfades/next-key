@@ -95,7 +95,6 @@ export default class AuthWithExpress extends AuthServer {
 
     res.cookie(cookie, refreshToken, {
       httpOnly: true,
-      signed: true,
       ...cookieOptions
     });
   }

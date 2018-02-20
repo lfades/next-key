@@ -1,4 +1,7 @@
-export { default as AuthServer } from './auth';
+import AuthServer from './auth';
+
+export * from './interfaces';
 export { default as Payload } from './payload';
 export { default as Scope } from './scope';
-export * from './interfaces';
+export { AuthServer };
+export default AuthServer;

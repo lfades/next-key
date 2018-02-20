@@ -15,7 +15,10 @@ function getDisplayName(Component: React.ComponentType) {
 }
 
 export default function withAuth(options: WithAuthOptions) {
-  const auth = new AuthClient(options.client);
+  const auth =
+    options.client instanceof AuthClient
+      ? options.client
+      : new AuthClient(options.client);
 
   const getAuthProps: GetAuthProps = async ({ req }) => {
     const props: WithAuthProps = {};

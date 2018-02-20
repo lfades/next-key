@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { AuthClientOptions } from 'next-key-client';
+import AuthClient, { AuthClientOptions } from 'next-key-client';
 import { ComponentType } from 'react';
 
 declare global {
@@ -12,7 +12,7 @@ declare global {
 
 export interface WithAuthOptions {
   getInitialProps?: boolean;
-  client: AuthClientOptions;
+  client: AuthClient | AuthClientOptions;
 }
 
 export interface WithAuthHOC {
