@@ -43,6 +43,6 @@
     "typescript": "^2.7.1"
   },
   "dependencies": {
-    "jwt-auth-server": "^1.1.1"
+    "next-key-server": "^1.0.3"
   }
 }

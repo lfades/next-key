@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from 'express';
-import { AuthServer, AuthServerOptions, StringAnyMap } from 'jwt-auth-server';
+import { AuthServer, AuthServerOptions, StringAnyMap } from 'next-key-server';
 import { asyncMiddleware } from './utils';
 
 declare global {

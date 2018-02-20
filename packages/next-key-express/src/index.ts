@@ -1,4 +1,4 @@
 import AuthWithExpress from './express';
 
-export * from 'jwt-auth-server';
+export * from 'next-key-server';
 export default AuthWithExpress;
