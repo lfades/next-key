@@ -36,8 +36,6 @@ export interface NextContext {
 export type GetInitialProps = (context: NextContext) => Promise<object>;
 
 export type GetAuthProps = (
-  Child: ComponentType<WithAuthProps>
-) => (
   context: NextContext,
   childProps: object
 ) => Promise<WithAuthProps>;
