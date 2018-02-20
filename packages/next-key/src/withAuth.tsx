@@ -15,6 +15,7 @@ function getDisplayName(Component: React.ComponentType) {
 }
 
 export default function withAuth(options: WithAuthOptions) {
+  let lastToken: string;
   const auth =
     options.client instanceof AuthClient
       ? options.client
@@ -63,6 +64,17 @@ export default function withAuth(options: WithAuthOptions) {
       };
 
       public static getInitialProps = getInitialProps;
+
+      constructor(props: WithAuthProps) {
+        super(props);
+
+        const { accessToken } = props;
+
+        if (process.browser && accessToken && accessToken !== lastToken) {
+          lastToken = accessToken;
+          auth.setAccessToken(lastToken);
+        }
+      }
 
       public render() {
         return <Child {...this.props} />;
