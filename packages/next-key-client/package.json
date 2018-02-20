@@ -1,7 +1,7 @@
 {
-  "name": "nextauth-express",
+  "name": "next-key-client",
   "version": "1.0.3",
-  "description": "jwt auth server for Express",
+  "description": "Simple authentication client",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -18,21 +18,24 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lfades/nextauth.git"
+    "url": "https://github.com/lfades/next-key.git"
   },
   "bugs": {
-    "url": "https://github.com/lfades/nextauth/issues"
+    "url": "https://github.com/lfades/next-key/issues"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.1",
     "@types/express": "^4.11.1",
     "@types/jest": "^22.1.2",
     "@types/jsonwebtoken": "^7.2.5",
-    "@types/supertest": "^2.0.4",
+    "@types/jwt-decode": "^2.2.1",
+    "@types/node-fetch": "^1.6.7",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
     "jest": "^22.2.2",
     "jsonwebtoken": "^8.1.1",
+    "jwt-auth-server": "^1.1.1",
+    "jwt-decode": "^2.2.0",
     "prettier": "^1.10.2",
     "supertest": "^3.0.0",
     "ts-jest": "^22.0.3",
@@ -43,6 +46,9 @@
     "typescript": "^2.7.1"
   },
   "dependencies": {
-    "jwt-auth-server": "^1.1.1"
+    "@types/js-cookie": "^2.1.0",
+    "cookie": "^0.3.1",
+    "isomorphic-unfetch": "^2.0.0",
+    "js-cookie": "^2.2.0"
   }
 }
