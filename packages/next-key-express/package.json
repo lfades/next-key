@@ -43,6 +43,6 @@
     "typescript": "^2.7.2"
   },
   "dependencies": {
-    "next-key-server": "^1.0.3"
+    "next-key-server": "^1.0.5"
   }
 }

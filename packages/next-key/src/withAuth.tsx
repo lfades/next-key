@@ -56,7 +56,7 @@ export default function withAuth(options: WithAuthOptions) {
       };
     }
 
-    return class WithApollo extends React.Component<WithAuthProps> {
+    return class WithAuth extends React.Component<WithAuthProps> {
       public static displayName = `WithAuth(${getDisplayName(Child)})`;
 
       public static propTypes = {
