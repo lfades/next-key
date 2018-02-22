@@ -153,36 +153,33 @@ describe('Auth Server', () => {
   });
 
   describe('Verifies an accessToken', () => {
-    it('returns the payload', () => {
+    it('Throws an error if accessToken.verify is undefined', () => {
+      const at = new AccessToken();
+
+      Object.assign(at, { verify: undefined });
+
+      const auth = new AuthServer({
+        accessToken: at,
+        refreshToken: new RefreshToken()
+      });
+
+      expect(auth.verify.bind(auth, expiredToken)).toThrow();
+    });
+
+    it('Returns null with an empty accessToken', () => {
+      expect(authServer.verify('')).toBe(null);
+    });
+
+    it('Returns null if expired', () => {
+      expect(authServer.verify(expiredToken)).toBe(null);
+    });
+
+    it('Returns the payload', () => {
       const at = authServer.createAccessToken(userPayload);
       const decodedPayload = authServer.verify(at.accessToken);
 
       expect(decodedPayload).toEqual(at.payload);
       expect(decodedPayload).toEqual(tokenPayload);
-    });
-
-    it('throws if expired', () => {
-      expect(() => {
-        authServer.verify(expiredToken);
-      }).toThrow();
-    });
-  });
-
-  describe('decodes an accessToken', () => {
-    it('Returns the payload', () => {
-      const at = authServer.createAccessToken(userPayload);
-      const decodedPayload = authServer.decode(at.accessToken);
-
-      expect(decodedPayload).toEqual(at.payload);
-      expect(decodedPayload).toEqual(tokenPayload);
-    });
-
-    it('Returns null with empty accessToken', () => {
-      expect(authServer.decode('')).toBe(null);
-    });
-
-    it('Returns null if expired', () => {
-      expect(authServer.decode(expiredToken)).toBe(null);
     });
   });
 });

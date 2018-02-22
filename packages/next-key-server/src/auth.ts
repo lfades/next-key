@@ -59,22 +59,25 @@ export default class AuthServer {
     };
   }
   /**
-   * Verifies an accessToken and returns its payload
-   */
-  public verify(accessToken: string) {
-    return this.payload.parse(this.accessToken.verify(accessToken));
-  }
-  /**
    * Decodes and returns the payload of an accessToken
    */
-  public decode(accessToken: string) {
+  public verify(accessToken: string) {
+    if (typeof this.accessToken.verify !== 'function') {
+      throw new Error(
+        'A verify function should be implemented to verify a token'
+      );
+    }
     if (!accessToken) return null;
 
+    let tokenPayload: StringAnyMap;
+
     try {
-      return this.verify(accessToken);
+      tokenPayload = this.accessToken.verify(accessToken);
     } catch (error) {
       return null;
     }
+
+    return this.payload.parse(tokenPayload);
   }
   /**
    * Returns the payload in a refreshToken that can be used to create an

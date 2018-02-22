@@ -17,7 +17,7 @@ export interface AuthAccessToken {
   /**
    * Verifies an accessToken and returns its payload
    */
-  verify(accessToken: string): StringAnyMap;
+  verify?(accessToken: string): StringAnyMap;
 }
 
 export interface AuthRefreshToken {
