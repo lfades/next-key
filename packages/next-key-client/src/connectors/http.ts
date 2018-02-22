@@ -1,5 +1,9 @@
-import fetch from 'isomorphic-unfetch';
+import unfetch from 'isomorphic-unfetch';
 import { FetchConnector, FetchError, NetworkError } from './utils';
+
+// this is related to a bug
+// https://stackoverflow.com/questions/44720448/fetch-typeerror-failed-to-execute-fetch-on-window-illegal-invocation
+const fetch = unfetch;
 
 export interface HttpConnectorOptions {
   createAccessTokenUrl: string;
