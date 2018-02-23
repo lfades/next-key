@@ -34,17 +34,6 @@ describe('Auth Server', () => {
         expiresIn: '20m'
       });
     }
-    public verify(accessToken: string) {
-      const payload = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
-        algorithms: ['HS256'],
-        clockTolerance: 80 // seconds to tolerate
-      });
-
-      // This should never happen cause our payload is a valid JSON
-      if (typeof payload === 'string') return {};
-
-      return payload;
-    }
   }
 
   class RefreshToken implements AuthRefreshToken {
@@ -83,9 +72,6 @@ describe('Auth Server', () => {
     payload: authPayload,
     scope: authScope
   });
-
-  const expiredToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxODE0MTIzNCwiZXhwIjoxNTE4MTQyNDM0fQ.3ZRmx08htMX5KLsv8VhBVD8vjxHzWOiDDli7JXFf83Q';
 
   // Payload to create a token
   const userPayload = {
@@ -150,36 +136,5 @@ describe('Auth Server', () => {
     expect(authServer.removeRefreshRoken(refreshToken)).toBe(true);
     expect(authServer.removeRefreshRoken(refreshToken)).toBe(false);
     expect(authServer.removeRefreshRoken('')).toBe(false);
-  });
-
-  describe('Verifies an accessToken', () => {
-    it('Throws an error if accessToken.verify is undefined', () => {
-      const at = new AccessToken();
-
-      Object.assign(at, { verify: undefined });
-
-      const auth = new AuthServer({
-        accessToken: at,
-        refreshToken: new RefreshToken()
-      });
-
-      expect(auth.verify.bind(auth, expiredToken)).toThrow();
-    });
-
-    it('Returns null with an empty accessToken', () => {
-      expect(authServer.verify('')).toBe(null);
-    });
-
-    it('Returns null if expired', () => {
-      expect(authServer.verify(expiredToken)).toBe(null);
-    });
-
-    it('Returns the payload', () => {
-      const at = authServer.createAccessToken(userPayload);
-      const decodedPayload = authServer.verify(at.accessToken);
-
-      expect(decodedPayload).toEqual(at.payload);
-      expect(decodedPayload).toEqual(tokenPayload);
-    });
   });
 });

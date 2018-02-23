@@ -1,5 +1,6 @@
-import AuthWithExpress from './express';
+import ExpressAuth from './express';
 
 export * from 'next-key-server';
-export { AuthWithExpress };
-export default AuthWithExpress;
+export { default as ExpressAuthKey } from './key';
+export { ExpressAuth };
+export default ExpressAuth;

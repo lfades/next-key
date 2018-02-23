@@ -2,12 +2,12 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import AuthWithExpress, {
+import ExpressAuth, {
   AuthAccessToken,
   AuthRefreshToken,
   Payload,
   Scope
-} from '../';
+} from '..';
 import { BAD_REQUEST_CODE, BAD_REQUEST_MESSAGE } from '../utils';
 
 describe('Auth with Express', () => {
@@ -83,7 +83,7 @@ describe('Auth with Express', () => {
     admin: 'a'
   });
 
-  const authServer = new AuthWithExpress({
+  const authServer = new ExpressAuth({
     accessToken: new AccessToken(),
     refreshToken: new RefreshToken(),
     payload: new Payload({
@@ -93,9 +93,6 @@ describe('Auth with Express', () => {
     }),
     scope: authScope
   });
-
-  const expiredToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxODE0MTIzNCwiZXhwIjoxNTE4MTQyNDM0fQ.3ZRmx08htMX5KLsv8VhBVD8vjxHzWOiDDli7JXFf83Q';
 
   const userPayload = {
     id: 'user_123',
@@ -125,17 +122,9 @@ describe('Auth with Express', () => {
     res.json({ refreshToken: authServer.getRefreshToken(req) });
   });
 
-  app.get('/accessToken', (req, res) => {
-    res.json({ accessToken: authServer.getAccessToken(req) });
-  });
-
   app.get('/logout', authServer.logout);
 
   app.get('/new/access_token', authServer.refreshAccessToken);
-
-  app.get('/authorize', authServer.authorize, (req, res) => {
-    res.json({ user: req.user });
-  });
 
   let login: request.Response;
 
@@ -194,13 +183,6 @@ describe('Auth with Express', () => {
     expect(response.body).toEqual({ refreshToken: login.body.refreshToken });
   });
 
-  it('Gets the accessToken from headers', async () => {
-    const response = await get('/accessToken');
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ accessToken: login.body.accessToken });
-  });
-
   it('Logouts', async () => {
     const response = await get('/logout');
 
@@ -241,32 +223,6 @@ describe('Auth with Express', () => {
 
       expect(response.status).toBe(BAD_REQUEST_CODE);
       expect(response.body).toEqual({ message: BAD_REQUEST_MESSAGE });
-    });
-  });
-
-  describe('Authorizes a Request', () => {
-    it('Sets req.user as the accessToken payload', async () => {
-      const response = await get('/authorize');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({ user: tokenPayload });
-    });
-
-    it('Sets req.user as null if no accessToken is available', async () => {
-      const response = await get('/authorize').set('Authorization', '');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({ user: null });
-    });
-
-    it('Sets req.user as null with an expired accessToken', async () => {
-      const response = await get('/authorize').set(
-        'Authorization',
-        'Bearer ' + expiredToken
-      );
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({ user: null });
     });
   });
 });

@@ -31,7 +31,7 @@
     "@types/supertest": "^2.0.4",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
-    "jest": "^22.4.0",
+    "jest": "^22.4.2",
     "jsonwebtoken": "^8.1.1",
     "prettier": "^1.10.2",
     "supertest": "^3.0.0",
@@ -43,6 +43,6 @@
     "typescript": "^2.7.2"
   },
   "dependencies": {
-    "next-key-server": "^1.0.5"
+    "next-key-server": "^1.0.7"
   }
 }

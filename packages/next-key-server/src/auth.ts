@@ -59,27 +59,6 @@ export default class AuthServer {
     };
   }
   /**
-   * Decodes and returns the payload of an accessToken
-   */
-  public verify(accessToken: string) {
-    if (typeof this.accessToken.verify !== 'function') {
-      throw new Error(
-        'A verify function should be implemented to verify a token'
-      );
-    }
-    if (!accessToken) return null;
-
-    let tokenPayload: StringAnyMap;
-
-    try {
-      tokenPayload = this.accessToken.verify(accessToken);
-    } catch (error) {
-      return null;
-    }
-
-    return this.payload.parse(tokenPayload);
-  }
-  /**
    * Returns the payload in a refreshToken that can be used to create an
    * accessToken
    * @param reset Refresh the cookie of the refreshToken

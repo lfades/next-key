@@ -1,5 +1,5 @@
-import { Request, RequestHandler, Response } from 'express';
-import { AuthServer, AuthServerOptions, StringAnyMap } from 'next-key-server';
+import { Request, Response } from 'express';
+import { AuthServer, StringAnyMap } from 'next-key-server';
 import { asyncMiddleware } from './utils';
 
 declare global {
@@ -14,7 +14,7 @@ const RT_COOKIE = 'r_t';
 /**
  * Authenticate requests with Express
  */
-export default class AuthWithExpress extends AuthServer {
+export default class ExpressAuth extends AuthServer {
   /**
    * Creates an accessToken based in a refreshToken present in cookies
    */
@@ -42,22 +42,6 @@ export default class AuthWithExpress extends AuthServer {
 
     return { done: true };
   });
-
-  constructor(options: AuthServerOptions) {
-    super(options);
-  }
-  /**
-   * Returns the accessToken from the headers
-   */
-  public getAccessToken(req: Request) {
-    const { authorization } = req.headers;
-    const accessToken =
-      authorization &&
-      typeof authorization === 'string' &&
-      authorization.split(' ')[1];
-
-    return accessToken || null;
-  }
   /**
    * Returns the refreshToken from the cookies
    */
@@ -70,16 +54,6 @@ export default class AuthWithExpress extends AuthServer {
       null
     );
   }
-  /**
-   * Assigns to req.user the payload of an accessToken or null
-   */
-  public authorize: RequestHandler = (req: Request, _res, next) => {
-    const accessToken = this.getAccessToken(req);
-
-    req.user = accessToken ? this.decode(accessToken) : null;
-
-    next();
-  };
   /**
    * Sets the refreshToken as a cookie
    * @param refreshToken sending null will remove the cookie
