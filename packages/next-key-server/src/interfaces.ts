@@ -1,14 +1,6 @@
-export interface AuthTokenOptions {
-  payload?: AuthPayload;
-  /**
-   * Verifies an accessToken and returns its payload
-   */
-  verify(accessToken: string): StringAnyMap;
-}
-
 export interface AuthServerOptions {
   accessToken: AuthAccessToken;
-  refreshToken: AuthRefreshToken;
+  refreshToken?: AuthRefreshToken;
   payload?: AuthPayload;
   scope?: AuthScope;
 }
@@ -17,11 +9,15 @@ export interface AuthAccessToken {
   /**
    * Creates a payload based in some data
    */
-  buildPayload(data: StringAnyMap): StringAnyMap;
+  getPayload?(data: StringAnyMap): StringAnyMap;
   /**
    * Creates the accessToken
    */
-  create(payload: StringAnyMap): string;
+  create?(payload: StringAnyMap): string;
+  /**
+   * Verifies an accessToken and returns its payload
+   */
+  verify?(accessToken: string): StringAnyMap;
 }
 
 export interface AuthRefreshToken {
