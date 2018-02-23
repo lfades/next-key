@@ -1,7 +1,7 @@
 import { Request, RequestHandler } from 'express';
 import { AuthKey } from 'next-key-server';
 
-export default class ExpressAuthToken extends AuthKey {
+export default class ExpressAuthKey extends AuthKey {
   /**
    * Assigns to req.user the payload of an accessToken or null
    */
