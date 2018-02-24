@@ -25,7 +25,7 @@ export default function withAuth(options: WithAuthOptions) {
     const props: WithAuthProps = {};
 
     if (process.browser) {
-      props.accessToken = auth.getAccessToken();
+      props.accessToken = await auth.fetchAccessToken();
       return props;
     }
 
