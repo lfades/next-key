@@ -20,6 +20,7 @@ describe('Auth Client', () => {
         return;
       }
     },
+    refreshTokenCookie: 'r_t',
     fetchConnector: new HttpConnector({
       createAccessTokenUrl: URL + '/accessToken',
       logoutUrl: URL + '/logout'
@@ -128,16 +129,26 @@ describe('Auth Client', () => {
   });
 
   describe('fetch a new accessToken', () => {
+    it('Returns undefined if refreshTokenCookie is undefined', async () => {
+      const client = new AuthClient({
+        decode: authClient.decode,
+        fetchConnector: authClient.fetch
+      });
+
+      client.setAccessToken('invalid');
+      expect(await client.fetchAccessToken()).toBeUndefined();
+    });
+
+    it('Returns undefined if no current token is present', async () => {
+      expect(await authClient.fetchAccessToken()).toBeUndefined();
+    });
+
     it('Should use the current token if its still valid', async () => {
       authClient.setAccessToken(accessToken);
       expect(await authClient.fetchAccessToken()).toBe(accessToken);
     });
 
-    it('Should not do anything if no current token is present', async () => {
-      expect(await authClient.fetchAccessToken()).toBeUndefined();
-    });
-
-    it('Should return a new token', async () => {
+    it('Returns a new token', async () => {
       authClient.setAccessToken('invalid');
       expect(await authClient.fetchAccessToken()).toBe('newToken');
     });
@@ -145,13 +156,14 @@ describe('Auth Client', () => {
     it('Should use the same fetch when called multiple times', async () => {
       const client = new AuthClient({
         decode: authClient.decode,
+        refreshTokenCookie: 'r_t',
         fetchConnector: new HttpConnector({
           createAccessTokenUrl: URL + '/accessToken/late',
           logoutUrl: 'x'
         })
       });
 
-      client.setAccessToken('x');
+      client.setAccessToken('invalid');
 
       const tokens = await Promise.all([
         client.fetchAccessToken(),
@@ -160,6 +172,7 @@ describe('Auth Client', () => {
       ]);
       const firstToken = tokens[0];
 
+      expect(firstToken).toBeTruthy();
       expect(tokens).toEqual([firstToken, firstToken, firstToken]);
     });
   });
@@ -169,6 +182,7 @@ describe('Auth Client', () => {
       decode() {
         // this will make decode fails
       },
+      refreshTokenCookie: 'r_t',
       fetchConnector: new HttpConnector({
         createAccessTokenUrl: URL + '/error',
         logoutUrl: URL + '/error'

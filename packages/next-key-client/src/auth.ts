@@ -27,7 +27,7 @@ export class AuthClient {
   public decode: Decode;
   public fetch: FetchConnector;
 
-  private refreshTokenCookie: string;
+  private refreshTokenCookie?: string;
   private getTokens: GetTokens;
   private clientATFetch?: Promise<string>;
 
@@ -38,7 +38,7 @@ export class AuthClient {
     this.decode = options.decode;
     this.fetch = options.fetchConnector;
     // Private
-    this.refreshTokenCookie = options.refreshTokenCookie || 'r_t';
+    this.refreshTokenCookie = options.refreshTokenCookie;
     this.getTokens = options.getTokens || this._getTokens;
   }
   /**
@@ -93,10 +93,18 @@ export class AuthClient {
     return req ? this.fetchServerToken(req) : this.fetchClientToken();
   }
   /**
+   * Returns true if a refreshToken cookie is defined
+   */
+  public withRefreshToken() {
+    return !!this.refreshTokenCookie;
+  }
+  /**
    * Returns the accessToken on SSR from cookies, if no token exists or its
    * invalid then it will fetch a new accessToken
    */
   private async fetchServerToken(req: IncomingMessage) {
+    if (!this.withRefreshToken()) return;
+
     const tokens = this.getTokens(req);
 
     if (!tokens || !tokens.refreshToken) return;
@@ -117,6 +125,8 @@ export class AuthClient {
    * invalid then it will fetch a new accessToken
    */
   private async fetchClientToken() {
+    if (!this.withRefreshToken()) return;
+
     const _accessToken = this.getAccessToken();
     // If the browser doesn't have an accessToken in cookies then don't try to
     // create a new one
@@ -172,7 +182,7 @@ export class AuthClient {
     if (!cookies) return;
 
     return {
-      refreshToken: cookies[this.refreshTokenCookie],
+      refreshToken: this.refreshTokenCookie && cookies[this.refreshTokenCookie],
       accessToken: cookies[this.cookie]
     };
   }
