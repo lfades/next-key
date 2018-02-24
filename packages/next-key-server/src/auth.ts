@@ -9,7 +9,7 @@ import {
 import Payload from './payload';
 import Scope from './scope';
 
-const MISSING_RT_MSG = 'refreshToken must be in AuthServer to use this method';
+const MISSING_RT_MSG = 'options.refreshToken is required to use this method';
 const MISSING_AT_CREATE_MSG = 'accessToken.create should be a function';
 const MISSING_AT_VERIFY_MSG = 'accessToken.verify should be a function';
 

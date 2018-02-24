@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, RequestHandler, Response } from 'express';
 import { AuthServer, StringAnyMap } from 'next-key-server';
 import { asyncMiddleware } from './utils';
 
@@ -11,6 +11,7 @@ declare global {
 }
 // Default cookie name for a refreshToken
 const RT_COOKIE = 'r_t';
+const MISSING_RT_MSG = 'refreshToken is required to use this method';
 /**
  * Authenticate requests with Express
  */
@@ -43,9 +44,33 @@ export default class ExpressAuth extends AuthServer {
     return { done: true };
   });
   /**
-   * Returns the refreshToken from the cookies
+   * Assigns to req.user the payload of an accessToken or null
+   */
+  public authorize: RequestHandler = (req, _res, next) => {
+    const accessToken = this.getAccessToken(req);
+
+    req.user = accessToken ? this.verify(accessToken) : null;
+
+    next();
+  };
+  /**
+   * Returns the accessToken from headers
+   */
+  public getAccessToken(req: Request) {
+    const { authorization } = req.headers;
+    const accessToken =
+      authorization &&
+      typeof authorization === 'string' &&
+      authorization.split(' ')[1];
+
+    return accessToken || null;
+  }
+  /**
+   * Returns the refreshToken from cookies
    */
   public getRefreshToken(req: Request) {
+    if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
+
     const cookie = this.refreshToken.cookie || RT_COOKIE;
 
     return (
@@ -59,6 +84,8 @@ export default class ExpressAuth extends AuthServer {
    * @param refreshToken sending null will remove the cookie
    */
   public setRefreshToken(res: Response, refreshToken: string | null) {
+    if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
+
     const { cookie = RT_COOKIE, cookieOptions: co } = this.refreshToken;
 
     if (refreshToken === null) res.clearCookie(cookie);
