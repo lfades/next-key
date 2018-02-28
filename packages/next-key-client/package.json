@@ -1,6 +1,6 @@
 {
   "name": "next-key-client",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Simple authentication client",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -37,7 +37,6 @@
     "jwt-auth-server": "^1.1.1",
     "jwt-decode": "^2.2.0",
     "prettier": "^1.10.2",
-    "supertest": "^3.0.0",
     "ts-jest": "^22.0.3",
     "tslint": "^5.9.1",
     "tslint-config-prettier": "^1.8.0",
@@ -47,6 +46,7 @@
   },
   "dependencies": {
     "@types/js-cookie": "^2.1.0",
+    "@types/node": "^9.4.6",
     "cookie": "^0.3.1",
     "isomorphic-unfetch": "^2.0.0",
     "js-cookie": "^2.2.0"

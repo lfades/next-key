@@ -49,6 +49,6 @@ export default class HttpConnector implements FetchConnector {
       throw new FetchError(res, errorData);
     }
 
-    throw new NetworkError(res);
+    throw new FetchError(res);
   }
 }

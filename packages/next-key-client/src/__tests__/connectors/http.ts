@@ -87,22 +87,31 @@ describe('Http connector', () => {
     }
   });
 
-  it('Throws a NetworkError for invalid requests', async () => {
+  it('Throws a FetchError on invalid status code', async () => {
     const c = new HttpConnector({
       createAccessTokenUrl: URL + '/error',
-      logoutUrl: 'invalid url'
+      logoutUrl: ''
     });
 
-    expect.assertions(8);
+    expect.assertions(4);
 
     try {
       await c.createAccessToken({});
     } catch (e) {
-      expect(e.name).toBe('NetworkError');
-      expect(e.code).toBe(NETWORK_ERROR_CODE);
-      expect(e.message).toBe(NETWORK_ERROR_MESSAGE);
+      expect(e.name).toBe('FetchError');
+      expect(e.code).toBe(400);
+      expect(e.message).toBe('failed');
       expect(e.res).toBeDefined();
     }
+  });
+
+  it('Throws a NetworkError for invalid requests', async () => {
+    const c = new HttpConnector({
+      createAccessTokenUrl: '',
+      logoutUrl: 'invalid url'
+    });
+
+    expect.assertions(4);
 
     try {
       await c.logout({});

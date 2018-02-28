@@ -25,13 +25,13 @@ export class FetchError extends Error {
 
   constructor(
     res: Response,
-    data: { message?: string; code?: string | number }
+    data?: { message?: string; code?: string | number }
   ) {
-    super(data.message || res.statusText);
+    super((data && data.message) || res.statusText);
 
     this.name = 'FetchError';
     this.status = res.status;
-    this.code = data.code || res.status;
+    this.code = (data && data.code) || res.status;
     this.res = res;
   }
 }
@@ -40,14 +40,11 @@ export class FetchError extends Error {
  */
 export class NetworkError extends Error {
   public code: string;
-  public res?: Response;
 
-  constructor(res?: Response) {
+  constructor() {
     super(NETWORK_ERROR_MESSAGE);
 
     this.name = 'NetworkError';
     this.code = NETWORK_ERROR_CODE;
-
-    if (res) this.res = res;
   }
 }
