@@ -1,4 +1,4 @@
-import { Request, RequestHandler, Response } from 'express';
+import { CookieOptions, Request, RequestHandler, Response } from 'express';
 import { AuthServer, StringAnyMap } from 'next-key-server';
 import { asyncMiddleware } from './utils';
 
@@ -15,16 +15,16 @@ const MISSING_RT_MSG = 'refreshToken is required to use this method';
 /**
  * Authenticate requests with Express
  */
-export default class ExpressAuth extends AuthServer {
+export default class ExpressAuth extends AuthServer<CookieOptions> {
   /**
    * Creates an accessToken based in a refreshToken present in cookies
    */
   public refreshAccessToken = asyncMiddleware(async (req, res) => {
     const refreshToken = this.getRefreshToken(req);
-    const reset = () => this.setRefreshToken(res, refreshToken);
-    const payload =
-      refreshToken && (await this.getPayload(refreshToken, reset));
+    if (!refreshToken) return;
 
+    const reset = () => this.setRefreshToken(res, refreshToken);
+    const payload = await this.getPayload(refreshToken, reset);
     if (!payload) return;
 
     const { accessToken } = this.createAccessToken(payload);
@@ -39,7 +39,7 @@ export default class ExpressAuth extends AuthServer {
     if (!refreshToken) return { done: false };
 
     await this.removeRefreshRoken(refreshToken);
-    this.setRefreshToken(res, null);
+    this.setRefreshToken(res, '');
 
     return { done: true };
   });
@@ -68,7 +68,7 @@ export default class ExpressAuth extends AuthServer {
   /**
    * Returns the refreshToken from cookies
    */
-  public getRefreshToken(req: Request) {
+  public getRefreshToken(req: Request): string | null {
     if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
 
     const cookie = this.refreshToken.cookie || RT_COOKIE;
@@ -81,21 +81,24 @@ export default class ExpressAuth extends AuthServer {
   }
   /**
    * Sets the refreshToken as a cookie
-   * @param refreshToken sending null will remove the cookie
+   * @param refreshToken sending an empty string will remove the cookie
    */
-  public setRefreshToken(res: Response, refreshToken: string | null) {
+  public setRefreshToken(res: Response, refreshToken: string) {
     if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
 
     const { cookie = RT_COOKIE, cookieOptions: co } = this.refreshToken;
-
-    if (refreshToken === null) res.clearCookie(cookie);
-    if (!refreshToken) return;
-
     const cookieOptions =
-      co && typeof co === 'function' ? co(refreshToken) : co;
+      co && typeof co === 'function' ? co(refreshToken) : { ...co };
+
+    // Remove the cookie
+    if (!refreshToken) {
+      delete cookieOptions.maxAge;
+      cookieOptions.expires = new Date(1);
+    }
 
     res.cookie(cookie, refreshToken, {
       httpOnly: true,
+      path: '/',
       ...cookieOptions
     });
   }

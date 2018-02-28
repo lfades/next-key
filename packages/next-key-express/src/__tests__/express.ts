@@ -250,7 +250,7 @@ describe('Auth with Express', () => {
       expect(response.body).toEqual({ message: BAD_REQUEST_MESSAGE });
     });
 
-    it('Returns an error with an invalid refreshToken', async () => {
+    it('Returns an error on an invalid refreshToken', async () => {
       const response = await get().set(
         'Cookie',
         `${REFRESH_TOKEN_COOKIE}=xxx;`
