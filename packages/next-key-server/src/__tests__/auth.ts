@@ -12,8 +12,7 @@ describe('Auth Server', () => {
   const ONE_DAY = ONE_MINUTE * 60 * 24;
   const ONE_MONTH = ONE_DAY * 30;
   const ACCESS_TOKEN_SECRET = 'password';
-  const MISSING_RT_MSG =
-    'refreshToken must be in AuthServer to use this method';
+  const MISSING_RT_MSG = 'options.refreshToken is required to use this method';
   const MISSING_AT_CREATE_MSG = 'accessToken.create should be a function';
   const MISSING_AT_VERIFY_MSG = 'accessToken.verify should be a function';
 

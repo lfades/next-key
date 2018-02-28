@@ -1,6 +1,6 @@
-export interface AuthServerOptions {
+export interface AuthServerOptions<CookieOptions = StringAnyMap> {
   accessToken: AuthAccessToken;
-  refreshToken?: AuthRefreshToken;
+  refreshToken?: AuthRefreshToken<CookieOptions>;
   payload?: AuthPayload;
   scope?: AuthScope;
 }
@@ -20,9 +20,18 @@ export interface AuthAccessToken {
   verify?(accessToken: string): StringAnyMap;
 }
 
-export interface AuthRefreshToken {
+export interface AuthRefreshToken<CookieOptions = StringAnyMap> {
+  /**
+   * Name of the refreshToken cookie
+   */
   cookie?: string;
-  cookieOptions?: CookieOptions | ((refreshToken: string) => CookieOptions);
+  /**
+   * Returns the cookie options that will be used when creating or removing
+   * the cookie, refreshToken will be null when removing the cookie
+   */
+  cookieOptions?:
+    | CookieOptions
+    | ((refreshToken: string | null) => CookieOptions);
   /**
    * Returns the payload in a refreshToken that can be used to create an
    * accessToken
@@ -55,16 +64,4 @@ export interface StringStringMap {
 
 export interface StringAnyMap {
   [key: string]: any;
-}
-
-export interface CookieOptions {
-  maxAge?: number;
-  signed?: boolean;
-  expires?: Date | boolean;
-  httpOnly?: boolean;
-  path?: string;
-  domain?: string;
-  secure?: boolean | 'auto';
-  encode?: (val: string) => void;
-  sameSite?: boolean | string;
 }

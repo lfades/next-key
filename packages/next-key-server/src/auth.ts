@@ -13,9 +13,9 @@ const MISSING_RT_MSG = 'options.refreshToken is required to use this method';
 const MISSING_AT_CREATE_MSG = 'accessToken.create should be a function';
 const MISSING_AT_VERIFY_MSG = 'accessToken.verify should be a function';
 
-export default class AuthServer {
+export default class AuthServer<CookieOptions = StringAnyMap> {
   public accessToken: AuthAccessToken;
-  public refreshToken?: AuthRefreshToken;
+  public refreshToken?: AuthRefreshToken<CookieOptions>;
   public payload: AuthPayload;
   public scope: AuthScope;
 
@@ -24,7 +24,7 @@ export default class AuthServer {
     refreshToken,
     payload,
     scope
-  }: AuthServerOptions) {
+  }: AuthServerOptions<CookieOptions>) {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
 
