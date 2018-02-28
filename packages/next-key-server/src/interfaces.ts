@@ -37,7 +37,10 @@ export interface AuthRefreshToken<CookieOptions = StringAnyMap> {
    * accessToken
    * @param reset Refresh the cookie of a refreshToken
    */
-  getPayload(refreshToken: string, reset: () => void): Promise<StringAnyMap>;
+  getPayload(
+    refreshToken: string,
+    reset: () => void
+  ): Promise<StringAnyMap | void>;
   /**
    * Creates the refreshToken
    */
