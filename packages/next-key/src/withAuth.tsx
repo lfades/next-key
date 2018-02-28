@@ -23,16 +23,12 @@ export default function withAuth(options: WithAuthOptions) {
 
   const getAuthProps: GetAuthProps = async ({ req }) => {
     const props: WithAuthProps = {};
-
-    if (process.browser) {
-      props.accessToken = await auth.fetchAccessToken();
-      return props;
-    }
-
     const accessToken = await auth.fetchAccessToken(req);
 
-    if (accessToken) {
-      props.accessToken = accessToken;
+    if (!accessToken) return props;
+    props.accessToken = accessToken;
+
+    if (!process.browser && req) {
       req.headers.Authorization = 'Bearer ' + accessToken;
     }
 

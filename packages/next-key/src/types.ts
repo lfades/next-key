@@ -25,9 +25,9 @@ export interface WithAuthProps {
 }
 
 export interface NextContext {
-  err: Error;
-  req: IncomingMessage;
-  res: ServerResponse;
+  err?: Error;
+  req?: IncomingMessage;
+  res?: ServerResponse;
   pathname: string;
   asPath: string;
   query: {
