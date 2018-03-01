@@ -15,18 +15,18 @@ export interface Result {
 }
 
 export const INTERNAL_ERROR_STATUS = 500;
-export const INTERNAL_ERROR_MESSAGE = 'Internal server error';
+export const INTERNAL_ERROR_MESSAGE = 'Internal Server Error';
 export const BAD_REQUEST_CODE = 400;
-export const BAD_REQUEST_MESSAGE = 'Invalid token';
+export const BAD_REQUEST_MESSAGE = 'Invalid Token';
 
 export class AuthError extends Error {
   public status: number;
 
-  constructor(data?: string | { message: string; status?: number }) {
-    if (!data) data = { message: INTERNAL_ERROR_MESSAGE };
+  constructor(data?: string | { message?: string; status?: number }) {
+    if (!data) data = {};
     if (typeof data === 'string') data = { message: data };
 
-    super(data.message);
+    super(data.message || INTERNAL_ERROR_MESSAGE);
 
     this.name = 'AuthError';
     this.status = data.status || INTERNAL_ERROR_STATUS;
@@ -38,19 +38,29 @@ export const run = (
 ): RequestHandler => (req, res) => {
   fn(req, res)
     .then(result => {
-      if (!result) {
-        const err = new AuthError({
-          message: BAD_REQUEST_MESSAGE,
-          status: BAD_REQUEST_CODE
-        });
-        res.statusCode = err.status;
-        sendError(req, res, err);
-      } else {
+      if (result) {
         send(res, 200, result);
+        return;
       }
+
+      const err = new AuthError({
+        message: BAD_REQUEST_MESSAGE,
+        status: BAD_REQUEST_CODE
+      });
+
+      res.statusCode = err.status;
+      res.statusMessage = err.message;
+
+      sendError(req, res, err);
     })
     .catch((err: AuthError) => {
-      res.statusCode = err.status || INTERNAL_ERROR_STATUS;
+      if (err.name !== 'AuthError') {
+        err = new AuthError(err);
+      }
+
+      res.statusCode = err.status;
+      res.statusMessage = err.message;
+
       sendError(req, res, err);
     });
 };
