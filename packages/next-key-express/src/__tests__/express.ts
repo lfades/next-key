@@ -119,7 +119,17 @@ describe('Auth with Express', () => {
       res.json(data);
     });
 
-    if (args.length) app.get('/', ...args);
+    const fns = args.map((fn): RequestHandler => async (req, res, next) => {
+      try {
+        await fn(req, res, next);
+      } catch (e) {
+        if (!res.finished) res.end();
+        // Don't hide any errors
+        throw e;
+      }
+    });
+
+    if (args.length) app.get('/', ...fns);
 
     agent = request.agent(app);
     login = await agent.get('/login');
@@ -192,6 +202,8 @@ describe('Auth with Express', () => {
     });
 
     it('Returns the token', async () => {
+      expect.assertions(1);
+
       await init((req, res) => {
         expect(authServer.getRefreshToken(req)).toBe(login.body.refreshToken);
         res.end();
@@ -204,9 +216,7 @@ describe('Auth with Express', () => {
     expect.assertions(1);
 
     await init((req, res) => {
-      expect(authServer.getAccessToken(req)).toEqual({
-        accessToken: login.body.accessToken
-      });
+      expect(authServer.getAccessToken(req)).toBe(login.body.accessToken);
       res.end();
     });
     await get();
