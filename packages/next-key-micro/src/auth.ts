@@ -1,7 +1,7 @@
 import { CookieSerializeOptions, parse, serialize } from 'cookie';
 import { IncomingMessage, ServerResponse } from 'http';
 import { AuthServer, StringAnyMap } from 'next-key-server';
-import { Request, RequestHandler, run } from './utils';
+import { Request, run } from './utils';
 
 // Default cookie name for a refreshToken
 const RT_COOKIE = 'r_t';
@@ -15,10 +15,10 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
    */
   public refreshAccessToken = run(async (req, res) => {
     const refreshToken = this.getRefreshToken(req);
-    const reset = () => this.setRefreshToken(res, refreshToken || '');
-    const payload =
-      refreshToken && (await this.getPayload(refreshToken, reset));
+    if (!refreshToken) return;
 
+    const reset = () => this.setRefreshToken(res, refreshToken);
+    const payload = await this.getPayload(refreshToken, reset);
     if (!payload) return;
 
     const { accessToken } = this.createAccessToken(payload);
@@ -29,7 +29,6 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
    */
   public logout = run(async (req, res) => {
     const refreshToken = this.getRefreshToken(req);
-
     if (!refreshToken) return { done: false };
 
     await this.removeRefreshRoken(refreshToken);
@@ -40,7 +39,7 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
   /**
    * Assigns to req.user the payload of an accessToken
    */
-  public authorize = (fn: RequestHandler) => (
+  public authorize = (fn: (req: Request, res: ServerResponse) => any) => (
     req: Request,
     res: ServerResponse
   ) => {
@@ -85,6 +84,14 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
    * @param refreshToken sending an empty string will remove the cookie
    */
   public setRefreshToken(res: ServerResponse, refreshToken: string) {
+    this.setCookie(res, this.serialize(refreshToken));
+  }
+  /**
+   * Turns a refreshToken into a serialized cookie
+   * @param refreshToken sending an empty string will return a cookie with a
+   * past out expire date
+   */
+  public serialize(refreshToken: string) {
     if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
 
     const { cookie = RT_COOKIE, cookieOptions: co } = this.refreshToken;
@@ -97,27 +104,23 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
       cookieOptions.expires = new Date(1);
     }
 
-    this.setCookie(
-      res,
-      serialize(cookie, refreshToken, {
-        httpOnly: true,
-        path: '/',
-        ...cookieOptions
-      })
-    );
+    return serialize(cookie, refreshToken, {
+      httpOnly: true,
+      path: '/',
+      ...cookieOptions
+    });
   }
   /**
    * Updates the header 'Set-Cookie'
    */
-  protected setCookie(res: ServerResponse, value: string | string[]) {
+  protected setCookie(res: ServerResponse, value: string) {
     const cookie = res.getHeader('Set-Cookie');
+    let val: string | string[] = value;
 
     if (cookie && typeof cookie !== 'number') {
-      value = Array.isArray(cookie)
-        ? cookie.concat(value)
-        : Array.isArray(value) ? [cookie].concat(value) : [cookie, value];
+      val = Array.isArray(cookie) ? cookie.concat(value) : [cookie, value];
     }
 
-    res.setHeader('Set-Cookie', value);
+    res.setHeader('Set-Cookie', val);
   }
 }

@@ -1,12 +1,12 @@
 import http from 'http';
+import { RequestHandler } from 'micro';
 import request from 'supertest';
 import {
   AuthError,
-  BAD_REQUEST_CODE,
   BAD_REQUEST_MESSAGE,
+  BAD_REQUEST_STATUS,
   INTERNAL_ERROR_MESSAGE,
   INTERNAL_ERROR_STATUS,
-  RequestHandler,
   run
 } from '../utils';
 
@@ -15,24 +15,33 @@ describe('run', () => {
     return request(http.createServer(run(fn))).get('/');
   };
 
-  it('Throws an error on undefined return', async () => {
+  it('Sends an error on undefined return', async () => {
     const response = await testRequest(async () => {
       // same as return undefined
     });
 
     expect(response.get('Content-Type')).toBeUndefined();
-    expect(response.status).toBe(BAD_REQUEST_CODE);
+    expect(response.status).toBe(BAD_REQUEST_STATUS);
     expect(response.text).toBe(BAD_REQUEST_MESSAGE);
   });
 
-  it('Can throw an error', async () => {
-    const response = await testRequest(async () => {
-      throw new Error();
-    });
+  it('Throws if the error is not AuthError', async () => {
+    expect.assertions(2);
 
-    expect(response.get('Content-Type')).toBeUndefined();
-    expect(response.status).toBe(INTERNAL_ERROR_STATUS);
-    expect(response.text).toBe(INTERNAL_ERROR_MESSAGE);
+    await request(
+      http.createServer(async (req, res) => {
+        const handler = run(() => {
+          throw new Error();
+        });
+
+        try {
+          await handler(req, res);
+        } catch (e) {
+          expect(e.name).not.toBe('AuthError');
+        }
+        expect(res.finished).toBe(true);
+      })
+    ).get('/');
   });
 
   describe('Can throw an AuthError', () => {
