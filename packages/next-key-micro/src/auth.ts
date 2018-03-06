@@ -1,20 +1,25 @@
 import { CookieSerializeOptions, parse, serialize } from 'cookie';
-import { IncomingMessage, ServerResponse } from 'http';
+import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { AuthServer, StringAnyMap } from 'next-key-server';
-import { Request, run } from './utils';
-
-// Default cookie name for a refreshToken
-const RT_COOKIE = 'r_t';
-const MISSING_RT_MSG = 'refreshToken is required to use this method';
+import { MISSING_RT_MESSAGE, RT_COOKIE } from './internals';
+import { Request, RequestLike, run } from './utils';
 /**
- * Authenticate requests with Express
+ * Authentication for an HTTP server
  */
 export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
   /**
+   * Http handler that creates an accessToken
+   */
+  public refreshAccessTokenHandler = run(this.refreshAccessToken.bind(this));
+  /**
+   * Http handler that logouts an user
+   */
+  public logoutHandler = run(this.logout.bind(this));
+  /**
    * Creates an accessToken based in a refreshToken present in cookies
    */
-  public refreshAccessToken = run(async (req, res) => {
-    const refreshToken = this.getRefreshToken(req);
+  public async refreshAccessToken(req: RequestLike, res: ServerResponse) {
+    const refreshToken = this.getRefreshToken(req.headers);
     if (!refreshToken) return;
 
     const reset = () => this.setRefreshToken(res, refreshToken);
@@ -23,19 +28,19 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
 
     const { accessToken } = this.createAccessToken(payload);
     return { accessToken };
-  });
+  }
   /**
    * Logouts an user
    */
-  public logout = run(async (req, res) => {
-    const refreshToken = this.getRefreshToken(req);
+  public async logout(req: RequestLike, res: ServerResponse) {
+    const refreshToken = this.getRefreshToken(req.headers);
     if (!refreshToken) return { done: false };
 
     await this.removeRefreshRoken(refreshToken);
     this.setRefreshToken(res, '');
 
     return { done: true };
-  });
+  }
   /**
    * Assigns to req.user the payload of an accessToken
    */
@@ -50,14 +55,13 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
    * Returns the user payload from the accessToken in a request
    */
   public getUser(req: IncomingMessage): StringAnyMap | null {
-    const accessToken = this.getAccessToken(req);
+    const accessToken = this.getAccessToken(req.headers);
     return accessToken ? this.verify(accessToken) : null;
   }
   /**
    * Returns the accessToken from headers
    */
-  public getAccessToken(req: IncomingMessage) {
-    const { authorization } = req.headers;
+  public getAccessToken({ authorization }: IncomingHttpHeaders) {
     const accessToken =
       authorization &&
       typeof authorization === 'string' &&
@@ -68,10 +72,10 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
   /**
    * Returns the refreshToken from cookies
    */
-  public getRefreshToken(req: IncomingMessage) {
-    if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
+  public getRefreshToken(headers: IncomingHttpHeaders) {
+    if (!this.refreshToken) throw new Error(MISSING_RT_MESSAGE);
 
-    const { cookie } = req.headers;
+    const { cookie } = headers;
     if (!cookie) return null;
 
     const cookieName = this.refreshToken.cookie || RT_COOKIE;
@@ -92,7 +96,7 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
    * past out expire date
    */
   public serialize(refreshToken: string) {
-    if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
+    if (!this.refreshToken) throw new Error(MISSING_RT_MESSAGE);
 
     const { cookie = RT_COOKIE, cookieOptions: co } = this.refreshToken;
     const cookieOptions =

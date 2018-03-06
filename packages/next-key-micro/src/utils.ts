@@ -1,6 +1,13 @@
-import { IncomingMessage, ServerResponse } from 'http';
+import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { send, sendError } from 'micro';
 import { StringAnyMap } from 'next-key-server';
+import {
+  BAD_REQUEST_MESSAGE,
+  BAD_REQUEST_STATUS,
+  INTERNAL_ERROR_MESSAGE,
+  INTERNAL_ERROR_STATUS,
+  Result
+} from './internals';
 
 export type AsyncRequestHandler<T> = (
   req: IncomingMessage,
@@ -10,17 +17,13 @@ export type AsyncRequestHandler<T> = (
 export interface Request extends IncomingMessage {
   user?: StringAnyMap | null;
 }
-
-export interface Result {
-  accessToken?: string;
-  done?: boolean;
-  [key: string]: any;
+/**
+ * This request has only the required fields to do authentication
+ */
+export interface RequestLike {
+  headers: IncomingHttpHeaders;
+  user?: StringAnyMap | null;
 }
-
-export const INTERNAL_ERROR_STATUS = 500;
-export const INTERNAL_ERROR_MESSAGE = 'Internal Server Error';
-export const BAD_REQUEST_STATUS = 400;
-export const BAD_REQUEST_MESSAGE = 'Invalid Token';
 
 export class AuthError extends Error {
   public status: number;

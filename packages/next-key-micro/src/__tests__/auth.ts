@@ -8,7 +8,8 @@ import MicroAuth, {
   Payload,
   Scope
 } from '..';
-import { BAD_REQUEST_MESSAGE, BAD_REQUEST_STATUS, run } from '../utils';
+import { BAD_REQUEST_MESSAGE, BAD_REQUEST_STATUS } from '../internals';
+import { run } from '../utils';
 
 describe('Auth with Express', () => {
   const ONE_MINUTE = 1000 * 60;
@@ -174,7 +175,7 @@ describe('Auth with Express', () => {
       expect.assertions(2);
 
       const handler: RequestHandler = req => {
-        expect(authServer.getRefreshToken(req)).toBeNull();
+        expect(authServer.getRefreshToken(req.headers)).toBeNull();
       };
 
       await testRequest(handler);
@@ -200,7 +201,7 @@ describe('Auth with Express', () => {
       expect(cookieStr).toBe(expectedCookie);
 
       await testRequest(req => {
-        expect(authServer.getRefreshToken(req)).toBe(data.refreshToken);
+        expect(authServer.getRefreshToken(req.headers)).toBe(data.refreshToken);
       }).set('Cookie', expectedCookie);
 
       // Returns authServer to its previous state
@@ -211,7 +212,7 @@ describe('Auth with Express', () => {
       expect.assertions(1);
 
       await testRequest(req => {
-        expect(authServer.getRefreshToken(req)).toBe(data.refreshToken);
+        expect(authServer.getRefreshToken(req.headers)).toBe(data.refreshToken);
       }).set('Cookie', cookieStr);
     });
   });
@@ -220,13 +221,13 @@ describe('Auth with Express', () => {
     expect.assertions(1);
 
     await testRequest(req => {
-      expect(authServer.getAccessToken(req)).toEqual(data.accessToken);
+      expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
     }).set('Authorization', 'Bearer ' + data.accessToken);
   });
 
   describe('Logout', () => {
     it('Removes the refreshToken', async () => {
-      const req = testSimpleRequest(authServer.logout);
+      const req = testSimpleRequest(authServer.logoutHandler);
       const response = await req.set('Cookie', cookieStr);
 
       expect(response.status).toBe(200);
@@ -237,7 +238,7 @@ describe('Auth with Express', () => {
     });
 
     it('Does nothing if a refreskToken does not exists', async () => {
-      const response = await testSimpleRequest(authServer.logout);
+      const response = await testSimpleRequest(authServer.logoutHandler);
 
       expect(response.status).toBe(200);
       expect(response.get('Set-Cookie')).toBeUndefined();
@@ -248,7 +249,7 @@ describe('Auth with Express', () => {
   describe('Create accessToken', () => {
     let req: request.Test;
     beforeEach(async () => {
-      req = testSimpleRequest(authServer.refreshAccessToken);
+      req = testSimpleRequest(authServer.refreshAccessTokenHandler);
     });
 
     it('Returns an accessToken', async () => {

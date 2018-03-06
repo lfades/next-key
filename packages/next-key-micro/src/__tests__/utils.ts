@@ -2,13 +2,12 @@ import http from 'http';
 import { RequestHandler } from 'micro';
 import request from 'supertest';
 import {
-  AuthError,
   BAD_REQUEST_MESSAGE,
   BAD_REQUEST_STATUS,
   INTERNAL_ERROR_MESSAGE,
-  INTERNAL_ERROR_STATUS,
-  run
-} from '../utils';
+  INTERNAL_ERROR_STATUS
+} from '../internals';
+import { AuthError, run } from '../utils';
 
 describe('run', () => {
   const testRequest = (fn: RequestHandler) => {
