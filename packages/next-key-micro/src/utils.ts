@@ -39,21 +39,17 @@ export class AuthError extends Error {
   }
 }
 
+export const BadRequest = AuthError.bind(null, {
+  message: BAD_REQUEST_MESSAGE,
+  status: BAD_REQUEST_STATUS
+});
+
 export const run = (
   fn: AsyncRequestHandler<void | Result>
 ): AsyncRequestHandler<void> => async (req, res) => {
   try {
     const result = await fn(req, res);
-
-    if (result) {
-      send(res, 200, result);
-      return;
-    }
-
-    throw new AuthError({
-      message: BAD_REQUEST_MESSAGE,
-      status: BAD_REQUEST_STATUS
-    });
+    if (result) send(res, 200, result);
   } catch (err) {
     if (err.name !== 'AuthError') {
       sendError(req, res, err);

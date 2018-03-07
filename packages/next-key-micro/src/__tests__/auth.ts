@@ -11,7 +11,7 @@ import MicroAuth, {
 import { BAD_REQUEST_MESSAGE, BAD_REQUEST_STATUS } from '../internals';
 import { run } from '../utils';
 
-describe('Auth with Express', () => {
+describe('Auth with Micro', () => {
   const ONE_MINUTE = 1000 * 60;
   const ONE_DAY = ONE_MINUTE * 60 * 24;
   const ONE_MONTH = ONE_DAY * 30;
@@ -38,7 +38,7 @@ describe('Auth with Express', () => {
     }
     public create(payload: { uId: string; cId: string; scope: string }) {
       return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
-        expiresIn: '20m'
+        expiresIn: '1m'
       });
     }
     public verify(accessToken: string) {
@@ -109,7 +109,7 @@ describe('Auth with Express', () => {
   const testRequest = (fn: RequestHandler) => {
     const cb = run(async (req, res) => {
       await fn(req, res);
-      return { done: true }; // return an object to avoid an AuthError
+      res.end();
     });
     return testSimpleRequest(cb);
   };

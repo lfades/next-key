@@ -2,7 +2,7 @@ import { CookieSerializeOptions, parse, serialize } from 'cookie';
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { AuthServer, StringAnyMap } from 'next-key-server';
 import { MISSING_RT_MESSAGE, RT_COOKIE } from './internals';
-import { Request, RequestLike, run } from './utils';
+import { BadRequest, Request, RequestLike, run } from './utils';
 /**
  * Authentication for an HTTP server
  */
@@ -20,11 +20,11 @@ export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
    */
   public async refreshAccessToken(req: RequestLike, res: ServerResponse) {
     const refreshToken = this.getRefreshToken(req.headers);
-    if (!refreshToken) return;
+    if (!refreshToken) throw new BadRequest();
 
     const reset = () => this.setRefreshToken(res, refreshToken);
     const payload = await this.getPayload(refreshToken, reset);
-    if (!payload) return;
+    if (!payload) throw new BadRequest();
 
     const { accessToken } = this.createAccessToken(payload);
     return { accessToken };

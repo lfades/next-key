@@ -1,28 +1,13 @@
 import http from 'http';
 import { RequestHandler } from 'micro';
 import request from 'supertest';
-import {
-  BAD_REQUEST_MESSAGE,
-  BAD_REQUEST_STATUS,
-  INTERNAL_ERROR_MESSAGE,
-  INTERNAL_ERROR_STATUS
-} from '../internals';
+import { INTERNAL_ERROR_MESSAGE, INTERNAL_ERROR_STATUS } from '../internals';
 import { AuthError, run } from '../utils';
 
 describe('run', () => {
   const testRequest = (fn: RequestHandler) => {
     return request(http.createServer(run(fn))).get('/');
   };
-
-  it('Sends an error on undefined return', async () => {
-    const response = await testRequest(async () => {
-      // same as return undefined
-    });
-
-    expect(response.get('Content-Type')).toBeUndefined();
-    expect(response.status).toBe(BAD_REQUEST_STATUS);
-    expect(response.text).toBe(BAD_REQUEST_MESSAGE);
-  });
 
   it('Throws if the error is not AuthError', async () => {
     expect.assertions(2);
