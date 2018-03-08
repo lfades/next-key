@@ -8,32 +8,22 @@ import MicroAuth, {
   Payload,
   Scope
 } from '..';
-import { BAD_REQUEST_MESSAGE, BAD_REQUEST_STATUS } from '../internals';
+import {
+  BAD_REQUEST_MESSAGE,
+  BAD_REQUEST_STATUS,
+  MISSING_RT_MESSAGE,
+  RT_COOKIE
+} from '../internals';
 import { run } from '../utils';
 
 describe('Auth with Micro', () => {
-  const ONE_MINUTE = 1000 * 60;
-  const ONE_DAY = ONE_MINUTE * 60 * 24;
-  const ONE_MONTH = ONE_DAY * 30;
   const ACCESS_TOKEN_SECRET = 'password';
   const REFRESH_TOKEN_COOKIE = 'aei';
-  const MISSING_RT_MSG = 'refreshToken is required to use this method';
-
   const refreshTokens = new Map();
 
   class AccessToken implements AuthAccessToken {
-    public getPayload({
-      id,
-      companyId,
-      admin
-    }: {
-      id: string;
-      companyId: string;
-      admin: boolean;
-    }) {
-      const scope = admin
-        ? authScope.create(['admin:read', 'admin:write'])
-        : '';
+    public getPayload({ id, companyId }: { id: string; companyId: string }) {
+      const scope = authScope.create(['admin:read', 'admin:write']);
       return { id, companyId, scope };
     }
     public create(payload: { uId: string; cId: string; scope: string }) {
@@ -52,17 +42,15 @@ describe('Auth with Micro', () => {
     public cookie = REFRESH_TOKEN_COOKIE;
     public cookieOptions() {
       return {
-        path: '/'
+        secure: false
       };
     }
+    public async create(payload: { id: string; companyId: string }) {
+      const id = Math.random()
+        .toString(36)
+        .substr(2, 9);
 
-    public async create({ id: userId }: { id: string }) {
-      const id = Date.now().toString();
-
-      refreshTokens.set(id, {
-        userId,
-        expireAt: new Date(Date.now() + ONE_MONTH)
-      });
+      refreshTokens.set(id, payload);
 
       return id;
     }
@@ -92,8 +80,7 @@ describe('Auth with Micro', () => {
 
   const userPayload = {
     id: 'user_123',
-    companyId: 'company_123',
-    admin: true
+    companyId: 'company_123'
   };
 
   let cookieStr: string;
@@ -121,132 +108,7 @@ describe('Auth with Micro', () => {
 
   beforeEach(initData);
 
-  describe('Set refreshToken', () => {
-    it('Throws an error if refreshToken is undefined', async () => {
-      expect.assertions(1);
-
-      await testRequest((_req, res) => {
-        const auth = new MicroAuth({ accessToken: new AccessToken() });
-        expect(auth.setRefreshToken.bind(auth, res, '')).toThrowError(
-          MISSING_RT_MSG
-        );
-      });
-    });
-
-    it('Sets the token as a cookie', async () => {
-      const response = await testRequest((_req, res) => {
-        authServer.setRefreshToken(res, data.refreshToken);
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.get('Set-Cookie')).toEqual([cookieStr]);
-    });
-
-    it('Concats the cookie', async () => {
-      expect.assertions(2);
-
-      const handle = (asArray: boolean): RequestHandler => (_req, res) => {
-        const cookie = 'x=y;';
-
-        res.setHeader('Set-Cookie', asArray ? [cookie] : cookie);
-        authServer.setRefreshToken(res, data.refreshToken);
-
-        expect(res.getHeader('Set-Cookie')).toEqual([cookie, cookieStr]);
-      };
-
-      await testRequest(handle(true));
-      await testRequest(handle(false));
-    });
-  });
-
-  describe('Get refreshToken', () => {
-    it('Throws an error if refreshToken is undefined', async () => {
-      expect.assertions(1);
-
-      await testRequest(req => {
-        const auth = new MicroAuth({ accessToken: new AccessToken() });
-        expect(auth.getRefreshToken.bind(auth, req)).toThrowError(
-          MISSING_RT_MSG
-        );
-      });
-    });
-
-    it('Returns null for an empty cookie', async () => {
-      expect.assertions(2);
-
-      const handler: RequestHandler = req => {
-        expect(authServer.getRefreshToken(req.headers)).toBeNull();
-      };
-
-      await testRequest(handler);
-      await testRequest(handler).set('Cookie', 'x=y;');
-    });
-
-    it('Uses cookie defaults', async () => {
-      expect.assertions(2);
-
-      if (!authServer.refreshToken) return;
-
-      const { cookie, cookieOptions } = authServer.refreshToken;
-
-      Object.assign(authServer.refreshToken, {
-        cookie: undefined,
-        cookieOptions: undefined
-      });
-
-      await initData();
-
-      const expectedCookie = `r_t=${data.refreshToken}; Path=/; HttpOnly`;
-
-      expect(cookieStr).toBe(expectedCookie);
-
-      await testRequest(req => {
-        expect(authServer.getRefreshToken(req.headers)).toBe(data.refreshToken);
-      }).set('Cookie', expectedCookie);
-
-      // Returns authServer to its previous state
-      Object.assign(authServer.refreshToken, { cookie, cookieOptions });
-    });
-
-    it('Returns the token', async () => {
-      expect.assertions(1);
-
-      await testRequest(req => {
-        expect(authServer.getRefreshToken(req.headers)).toBe(data.refreshToken);
-      }).set('Cookie', cookieStr);
-    });
-  });
-
-  it('Gets the accessToken from headers', async () => {
-    expect.assertions(1);
-
-    await testRequest(req => {
-      expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
-    }).set('Authorization', 'Bearer ' + data.accessToken);
-  });
-
-  describe('Logout', () => {
-    it('Removes the refreshToken', async () => {
-      const req = testSimpleRequest(authServer.logoutHandler);
-      const response = await req.set('Cookie', cookieStr);
-
-      expect(response.status).toBe(200);
-      expect(response.get('Set-Cookie')).toEqual([
-        `${REFRESH_TOKEN_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
-      ]);
-      expect(response.body).toEqual({ done: true });
-    });
-
-    it('Does nothing if a refreskToken does not exists', async () => {
-      const response = await testSimpleRequest(authServer.logoutHandler);
-
-      expect(response.status).toBe(200);
-      expect(response.get('Set-Cookie')).toBeUndefined();
-      expect(response.body).toEqual({ done: false });
-    });
-  });
-
-  describe('Create accessToken', () => {
+  describe('Refresh accessToken', () => {
     let req: request.Test;
     beforeEach(async () => {
       req = testSimpleRequest(authServer.refreshAccessTokenHandler);
@@ -276,6 +138,27 @@ describe('Auth with Micro', () => {
     });
   });
 
+  describe('Logout', () => {
+    it('Removes the refreshToken', async () => {
+      const req = testSimpleRequest(authServer.logoutHandler);
+      const response = await req.set('Cookie', cookieStr);
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([
+        `${REFRESH_TOKEN_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
+      ]);
+      expect(response.body).toEqual({ done: true });
+    });
+
+    it('Does nothing if a refreskToken does not exists', async () => {
+      const response = await testSimpleRequest(authServer.logoutHandler);
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toBeUndefined();
+      expect(response.body).toEqual({ done: false });
+    });
+  });
+
   describe('Authorize a Request', () => {
     it('Sets req.user as the accessToken payload', async () => {
       expect.assertions(1);
@@ -295,6 +178,121 @@ describe('Auth with Micro', () => {
           expect(req.user).toEqual(null);
         })
       );
+    });
+  });
+
+  it('Gets the accessToken from headers', async () => {
+    expect.assertions(1);
+
+    await testRequest(req => {
+      expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
+    }).set('Authorization', 'Bearer ' + data.accessToken);
+  });
+
+  describe('Get refreshToken', () => {
+    it('Returns null for an empty cookie', async () => {
+      expect.assertions(2);
+
+      const handler: RequestHandler = req => {
+        expect(authServer.getRefreshToken(req.headers)).toBeNull();
+      };
+
+      await testRequest(handler);
+      // For an invalid cookie it should also return null
+      await testRequest(handler).set('Cookie', 'x=y;');
+    });
+
+    it('Returns the token', async () => {
+      expect.assertions(1);
+
+      await testRequest(req => {
+        expect(authServer.getRefreshToken(req.headers)).toBe(data.refreshToken);
+      }).set('Cookie', cookieStr);
+    });
+  });
+
+  describe('setRefreshToken', () => {
+    it('Sets the token as a cookie', async () => {
+      const response = await testRequest((_req, res) => {
+        authServer.setRefreshToken(res, data.refreshToken);
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([cookieStr]);
+    });
+
+    it('Concats the cookie', async () => {
+      expect.assertions(2);
+
+      const handle = (asArray: boolean): RequestHandler => (_req, res) => {
+        const cookie = 'x=y;';
+
+        res.setHeader('Set-Cookie', asArray ? [cookie] : cookie);
+        authServer.setRefreshToken(res, data.refreshToken);
+
+        expect(res.getHeader('Set-Cookie')).toEqual([cookie, cookieStr]);
+      };
+
+      await testRequest(handle(true));
+      await testRequest(handle(false));
+    });
+  });
+
+  describe('getCookieName', () => {
+    it('Throws an error if refreshToken is undefined', async () => {
+      const auth = new MicroAuth({ accessToken: new AccessToken() });
+
+      expect(auth.getCookieName.bind(auth)).toThrowError(MISSING_RT_MESSAGE);
+    });
+
+    it('Can use a default value', () => {
+      const auth = new MicroAuth({
+        accessToken: new AccessToken(),
+        refreshToken: Object.assign(new RefreshToken(), { cookie: undefined })
+      });
+
+      expect(auth.getCookieName()).toBe(RT_COOKIE);
+    });
+
+    it('Returns the cookie name', () => {
+      expect(authServer.getCookieName()).toBe(REFRESH_TOKEN_COOKIE);
+    });
+  });
+
+  describe('getCookieOptions', () => {
+    const options = { httpOnly: true, path: '/' };
+
+    it('Throws an error if refreshToken is undefined', async () => {
+      const auth = new MicroAuth({ accessToken: new AccessToken() });
+      const fn = auth.getCookieOptions.bind(auth, data.refreshToken);
+
+      expect(fn).toThrowError(MISSING_RT_MESSAGE);
+    });
+
+    it('Uses default options', () => {
+      const auth = new MicroAuth({
+        accessToken: new AccessToken(),
+        refreshToken: Object.assign(new RefreshToken(), {
+          cookieOptions: undefined
+        })
+      });
+
+      expect(auth.getCookieOptions(data.refreshToken)).toEqual(options);
+    });
+
+    it('Returns an expired date when removing a cookie', () => {
+      expect(authServer.getCookieOptions('')).toEqual({
+        expires: new Date(1),
+        secure: false,
+        ...options
+      });
+    });
+
+    it('Returns the cookie options', () => {
+      expect(authServer.getCookieOptions(data.refreshToken)).toEqual({
+        secure: false,
+        ...options
+      });
     });
   });
 });
