@@ -89,8 +89,16 @@ export class AuthClient {
    * Returns a new accessToken
    * @param req Sending a Request means the token will be created during SSR
    */
-  public fetchAccessToken(req?: IncomingMessage) {
-    return req ? this.fetchServerToken(req) : this.fetchClientToken();
+  public async fetchAccessToken(req?: IncomingMessage) {
+    try {
+      return req ? this.fetchServerToken(req) : this.fetchClientToken();
+    } catch (err) {
+      // Ignore errors in the server
+      if (req) return;
+      if (err.name !== 'FetchError') throw err;
+      // Remove the accessToken that caused a FetchError
+      this.removeAccessToken();
+    }
   }
   /**
    * Returns true if a refreshToken cookie is defined

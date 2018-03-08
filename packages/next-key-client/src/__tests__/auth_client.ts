@@ -4,7 +4,7 @@ import jwtDecode from 'jwt-decode';
 import { AuthClient, HttpConnector } from '..';
 
 describe('Auth Client', () => {
-  const PORT = 5001;
+  const PORT = 5002;
   const URL = 'http://localhost:' + PORT;
 
   let server: Server;
