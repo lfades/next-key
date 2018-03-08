@@ -16,6 +16,7 @@ function getDisplayName(Component: React.ComponentType) {
 
 export default function withAuth(options: WithAuthOptions) {
   let lastToken: string;
+
   const auth =
     options.client instanceof AuthClient
       ? options.client
@@ -23,7 +24,14 @@ export default function withAuth(options: WithAuthOptions) {
 
   const getAuthProps: GetAuthProps = async ({ req }) => {
     const props: WithAuthProps = {};
-    const accessToken = await auth.fetchAccessToken(req);
+    let accessToken: string | undefined;
+
+    try {
+      accessToken = await auth.fetchAccessToken(req);
+    } catch (err) {
+      // Ignore errors in SSR
+      if (process.browser) throw err;
+    }
 
     if (!accessToken) return props;
     props.accessToken = accessToken;
