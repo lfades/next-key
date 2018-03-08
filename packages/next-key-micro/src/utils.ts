@@ -5,14 +5,18 @@ import {
   BAD_REQUEST_MESSAGE,
   BAD_REQUEST_STATUS,
   INTERNAL_ERROR_MESSAGE,
-  INTERNAL_ERROR_STATUS,
-  Result
+  INTERNAL_ERROR_STATUS
 } from './internals';
 
-export type AsyncRequestHandler<T> = (
+export type AsyncRequestHandler<T = void> = (
   req: IncomingMessage,
   res: ServerResponse
 ) => Promise<T>;
+
+export interface HandlerResult {
+  accessToken?: string;
+  done?: boolean;
+}
 
 export interface Request extends IncomingMessage {
   user?: StringAnyMap | null;
@@ -45,8 +49,8 @@ export const BadRequest = AuthError.bind(null, {
 });
 
 export const run = (
-  fn: AsyncRequestHandler<void | Result>
-): AsyncRequestHandler<void> => async (req, res) => {
+  fn: AsyncRequestHandler<void | HandlerResult>
+): AsyncRequestHandler => async (req, res) => {
   try {
     const result = await fn(req, res);
     if (result) send(res, 200, result);

@@ -1,11 +1,10 @@
 import http from 'http';
-import { RequestHandler } from 'micro';
 import request from 'supertest';
 import { INTERNAL_ERROR_MESSAGE, INTERNAL_ERROR_STATUS } from '../internals';
-import { AuthError, run } from '../utils';
+import { AsyncRequestHandler, AuthError, HandlerResult, run } from '../utils';
 
 describe('run', () => {
-  const testRequest = (fn: RequestHandler) => {
+  const testRequest = (fn: AsyncRequestHandler<void | HandlerResult>) => {
     return request(http.createServer(run(fn))).get('/');
   };
 
@@ -61,11 +60,11 @@ describe('run', () => {
 
   it('Can send a json', async () => {
     const response = await testRequest(async () => {
-      return { a: 'b', c: 'd' };
+      return { accessToken: 'xxx' };
     });
 
     expect(response.get('Content-Type')).toMatch('application/json');
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ a: 'b', c: 'd' });
+    expect(response.body).toEqual({ accessToken: 'xxx' });
   });
 });

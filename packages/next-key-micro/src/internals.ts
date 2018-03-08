@@ -12,9 +12,3 @@ export const INTERNAL_ERROR_MESSAGE = 'Internal Server Error';
 export const BAD_REQUEST_STATUS = 400;
 
 export const BAD_REQUEST_MESSAGE = 'Invalid Token';
-
-export interface Result {
-  accessToken?: string;
-  done?: boolean;
-  [key: string]: any;
-}

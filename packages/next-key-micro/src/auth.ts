@@ -6,9 +6,7 @@ import { BadRequest, Request, RequestLike, run } from './utils';
 /**
  * Authentication for an HTTP server
  */
-export default class MicroAuth<
-  CookieOptions = CookieSerializeOptions
-> extends AuthServer<CookieOptions> {
+export default class MicroAuth extends AuthServer<CookieSerializeOptions> {
   /**
    * Http handler that creates an accessToken
    */
@@ -112,12 +110,10 @@ export default class MicroAuth<
    * @param refreshToken sending an empty string will return a cookie with a
    * past out expire date
    */
-  public getCookieOptions(refreshToken: string): CookieOptions {
+  public getCookieOptions(refreshToken: string) {
     if (!this.refreshToken) throw new Error(MISSING_RT_MESSAGE);
-    // I'm Using type any here to avoid the error: "Spread types may only be
-    // created from object types." caused because CookieOptions can be anything
-    // but I know it's something similar to CookieSerializeOptions
-    const co = this.refreshToken.cookieOptions as any;
+
+    const co = this.refreshToken.cookieOptions;
     const cookieOptions =
       co && typeof co === 'function' ? co(refreshToken || null) : { ...co };
 
