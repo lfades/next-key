@@ -1,6 +1,12 @@
 import { CookieOptions, Request, RequestHandler, Response } from 'express';
-import { AuthServer, StringAnyMap } from 'next-key-server';
-import { asyncMiddleware } from './utils';
+import http from 'http';
+import {
+  AuthServer,
+  BadRequest,
+  MicroAuth,
+  run,
+  StringAnyMap
+} from 'next-key-micro';
 
 declare global {
   namespace Express {
@@ -9,73 +15,71 @@ declare global {
     }
   }
 }
-// Default cookie name for a refreshToken
-const RT_COOKIE = 'r_t';
-const MISSING_RT_MSG = 'refreshToken is required to use this method';
 /**
  * Authenticate requests with Express
  */
 export default class ExpressAuth extends AuthServer<CookieOptions> {
   /**
+   * The express implementation and next-key-micro are very similar, this allows
+   * code reuse and also an easy implementation with next-key-graphql
+   */
+  public micro = new MicroAuth(this as any);
+  /**
+   * Http handler that creates an accessToken
+   */
+  public refreshAccessTokenHandler = run(this.refreshAccessToken.bind(this));
+  /**
+   * Http handler that logouts an user
+   */
+  public logoutHandler = run(this.logout.bind(this));
+  /**
    * Creates an accessToken based in a refreshToken present in cookies
    */
-  public refreshAccessToken = asyncMiddleware(async (req, res) => {
+  public async refreshAccessToken(req: Request, res: Response) {
     const refreshToken = this.getRefreshToken(req);
-    if (!refreshToken) return;
+    if (!refreshToken) throw new BadRequest();
 
     const reset = () => this.setRefreshToken(res, refreshToken);
     const payload = await this.getPayload(refreshToken, reset);
-    if (!payload) return;
+    if (!payload) throw new BadRequest();
 
     const { accessToken } = this.createAccessToken(payload);
     return { accessToken };
-  });
+  }
   /**
    * Logouts an user
    */
-  public logout = asyncMiddleware(async (req: Request, res: Response) => {
+  public async logout(req: Request, res: Response) {
     const refreshToken = this.getRefreshToken(req);
-
     if (!refreshToken) return { done: false };
 
     await this.removeRefreshRoken(refreshToken);
     this.setRefreshToken(res, '');
 
     return { done: true };
-  });
+  }
   /**
-   * Assigns to req.user the payload of an accessToken or null
+   * Assigns to req.user the payload of an accessToken
    */
   public authorize: RequestHandler = (req, _res, next) => {
-    const accessToken = this.getAccessToken(req);
-
-    req.user = accessToken ? this.verify(accessToken) : null;
-
+    req.user = this.micro.getUser(req);
     next();
   };
   /**
    * Returns the accessToken from headers
    */
-  public getAccessToken(req: Request) {
-    const { authorization } = req.headers;
-    const accessToken =
-      authorization &&
-      typeof authorization === 'string' &&
-      authorization.split(' ')[1];
-
-    return accessToken || null;
+  public getAccessToken(headers: http.IncomingHttpHeaders) {
+    return this.micro.getAccessToken(headers);
   }
   /**
    * Returns the refreshToken from cookies
    */
   public getRefreshToken(req: Request): string | null {
-    if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
-
-    const cookie = this.refreshToken.cookie || RT_COOKIE;
+    const cookieName = this.micro.getCookieName();
 
     return (
-      (req.signedCookies && req.signedCookies[cookie]) ||
-      (req.cookies && req.cookies[cookie]) ||
+      (req.signedCookies && req.signedCookies[cookieName]) ||
+      (req.cookies && req.cookies[cookieName]) ||
       null
     );
   }
@@ -84,22 +88,14 @@ export default class ExpressAuth extends AuthServer<CookieOptions> {
    * @param refreshToken sending an empty string will remove the cookie
    */
   public setRefreshToken(res: Response, refreshToken: string) {
-    if (!this.refreshToken) throw new Error(MISSING_RT_MSG);
+    const cookie = this.micro.getCookieName();
+    const cookieOptions: CookieOptions = this.micro.getCookieOptions(
+      refreshToken
+    );
 
-    const { cookie = RT_COOKIE, cookieOptions: co } = this.refreshToken;
-    const cookieOptions =
-      co && typeof co === 'function' ? co(refreshToken) : { ...co };
+    // Having signed as true will cause Express to not send an empty cookie
+    if (!refreshToken) cookieOptions.signed = false;
 
-    // Remove the cookie
-    if (!refreshToken) {
-      delete cookieOptions.maxAge;
-      cookieOptions.expires = new Date(1);
-    }
-
-    res.cookie(cookie, refreshToken, {
-      httpOnly: true,
-      path: '/',
-      ...cookieOptions
-    });
+    res.cookie(cookie, refreshToken, cookieOptions);
   }
 }

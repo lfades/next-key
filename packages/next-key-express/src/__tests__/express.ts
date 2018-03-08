@@ -6,45 +6,30 @@ import ExpressAuth, {
   AuthAccessToken,
   AuthRefreshToken,
   Payload,
+  run,
   Scope
 } from '..';
-import { BAD_REQUEST_CODE, BAD_REQUEST_MESSAGE } from '../utils';
+import { BAD_REQUEST_MESSAGE, BAD_REQUEST_STATUS } from '../internals';
 
 describe('Auth with Express', () => {
-  const ONE_MINUTE = 1000 * 60;
-  const ONE_DAY = ONE_MINUTE * 60 * 24;
-  const ONE_MONTH = ONE_DAY * 30;
   const ACCESS_TOKEN_SECRET = 'password';
   const REFRESH_TOKEN_COOKIE = 'aei';
   const COOKIE_PARSER_SECRET = 'secret';
-  const MISSING_RT_MSG = 'refreshToken is required to use this method';
-
   const refreshTokens = new Map();
 
   class AccessToken implements AuthAccessToken {
-    public getPayload({
-      id,
-      companyId,
-      admin
-    }: {
-      id: string;
-      companyId: string;
-      admin: boolean;
-    }) {
-      const scope = admin
-        ? authScope.create(['admin:read', 'admin:write'])
-        : '';
+    public getPayload({ id, companyId }: { id: string; companyId: string }) {
+      const scope = authScope.create(['admin:read', 'admin:write']);
       return { id, companyId, scope };
     }
     public create(payload: { uId: string; cId: string; scope: string }) {
       return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
-        expiresIn: '20m'
+        expiresIn: '1m'
       });
     }
     public verify(accessToken: string) {
       return jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
-        algorithms: ['HS256'],
-        clockTolerance: 80 // seconds to tolerate
+        algorithms: ['HS256']
       }) as object;
     }
   }
@@ -56,14 +41,12 @@ describe('Auth with Express', () => {
         signed: true
       };
     }
+    public async create(payload: { id: string; companyId: string }) {
+      const id = Math.random()
+        .toString(36)
+        .substr(2, 9);
 
-    public async create({ id: userId }: { id: string }) {
-      const id = Date.now().toString();
-
-      refreshTokens.set(id, {
-        userId,
-        expireAt: new Date(Date.now() + ONE_MONTH)
-      });
+      refreshTokens.set(id, payload);
 
       return id;
     }
@@ -93,159 +76,83 @@ describe('Auth with Express', () => {
 
   const userPayload = {
     id: 'user_123',
-    companyId: 'company_123',
-    admin: true
+    companyId: 'company_123'
   };
 
-  const tokenPayload = {
-    id: userPayload.id,
-    companyId: userPayload.companyId,
-    scope: 'a:r:w'
+  let cookieStr: string;
+  let data: {
+    accessToken: string;
+    refreshToken: string;
+    payload: object;
   };
 
-  let agent: request.SuperTest<request.Test>;
-  let login: request.Response;
-
-  const init = async (...args: RequestHandler[]) => {
+  const testSimpleRequest = (...handlers: RequestHandler[]) => {
     const app = express();
 
     app.use(cookieParser(COOKIE_PARSER_SECRET));
+    app.get('/', ...handlers);
 
-    app.get('/login', async (_req, res) => {
-      const data = await authServer.createTokens(userPayload);
-
-      authServer.setRefreshToken(res, data.refreshToken);
-
-      res.json(data);
-    });
-
-    const fns = args.map((fn): RequestHandler => async (req, res, next) => {
-      try {
-        await fn(req, res, next);
-      } catch (e) {
-        if (!res.finished) res.end();
-        // Don't hide any errors
-        throw e;
-      }
-    });
-
-    if (args.length) app.get('/', ...fns);
-
-    agent = request.agent(app);
-    login = await agent.get('/login');
+    return request(app).get('/');
   };
-  const get = () =>
-    agent.get('/').set('Authorization', 'Bearer ' + login.body.accessToken);
+  const testRequest = (...handlers: RequestHandler[]) => {
+    const asyncHandlers = handlers.map(
+      (fn): RequestHandler => async (req, res, next) => {
+        await run(async () => {
+          await fn(req, res, next);
+        })(req, res);
 
-  describe('Set refreshToken', () => {
-    it('Throws an error if refreshToken is undefined', async () => {
-      expect.assertions(1);
-
-      await init((_req, res) => {
-        const auth = new ExpressAuth({ accessToken: new AccessToken() });
-        expect(auth.setRefreshToken.bind(auth, res, '')).toThrowError(
-          MISSING_RT_MSG
-        );
-        res.send();
-      });
-      await get();
+        res.end();
+      }
+    );
+    return testSimpleRequest(...asyncHandlers);
+  };
+  const initCookieStr = () => {
+    return testRequest((_req, res) => {
+      authServer.setRefreshToken(res, data.refreshToken);
+      cookieStr = res.get('Set-Cookie');
     });
+  };
+  const initData = async () => {
+    data = await authServer.createTokens(userPayload);
+    await initCookieStr();
+  };
 
-    it('Sets the token as a cookie', async () => {
-      await init();
+  beforeEach(initData);
 
-      expect(login.status).toBe(200);
-      expect(login.get('Set-Cookie')).toEqual([
-        expect.stringContaining(REFRESH_TOKEN_COOKIE + '=')
-      ]);
-    });
+  it('Sets the refreshToken as a cookie', async () => {
+    const response = await initCookieStr();
+
+    expect(response.status).toBe(200);
+    expect(response.get('Set-Cookie')).toEqual([cookieStr]);
   });
 
-  describe('Get refreshToken', () => {
-    it('Throws an error if refreshToken is undefined', async () => {
-      expect.assertions(1);
+  it('Gets the refreshToken from cookies', async () => {
+    expect.assertions(2);
 
-      await init((req, res) => {
-        const auth = new ExpressAuth({ accessToken: new AccessToken() });
-        expect(auth.getRefreshToken.bind(auth, req)).toThrowError(
-          MISSING_RT_MSG
-        );
-        res.end();
+    await testRequest(req => {
+      expect(req.signedCookies).toEqual({
+        [REFRESH_TOKEN_COOKIE]: data.refreshToken
       });
-      await get();
-    });
-
-    it('Uses cookie defaults', async () => {
-      expect.assertions(3);
-      if (!authServer.refreshToken) return;
-
-      const { cookie, cookieOptions } = authServer.refreshToken;
-
-      Object.assign(authServer.refreshToken, {
-        cookie: undefined,
-        cookieOptions: undefined
-      });
-
-      await init((req, res) => {
-        expect(authServer.getRefreshToken(req)).toBe(login.body.refreshToken);
-        res.end();
-      });
-
-      expect(login.status).toBe(200);
-      expect(login.get('Set-Cookie')).toEqual([
-        expect.stringContaining('r_t=')
-      ]);
-
-      await get();
-
-      Object.assign(authServer.refreshToken, { cookie, cookieOptions });
-    });
-
-    it('Returns the token', async () => {
-      expect.assertions(1);
-
-      await init((req, res) => {
-        expect(authServer.getRefreshToken(req)).toBe(login.body.refreshToken);
-        res.end();
-      });
-      await get();
-    });
+      expect(authServer.getRefreshToken(req)).toBe(data.refreshToken);
+    }).set('Cookie', cookieStr);
   });
 
   it('Gets the accessToken from headers', async () => {
     expect.assertions(1);
 
-    await init((req, res) => {
-      expect(authServer.getAccessToken(req)).toBe(login.body.accessToken);
-      res.end();
-    });
-    await get();
+    await testRequest(req => {
+      expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
+    }).set('Authorization', 'Bearer ' + data.accessToken);
   });
 
-  it('Logouts', async () => {
-    await init(authServer.logout);
-
-    const response = await get();
-
-    expect(response.status).toBe(200);
-    expect(response.get('Set-Cookie')).toEqual(
-      expect.arrayContaining([expect.any(String)])
-    );
-    expect(response.body).toEqual({ done: true });
-
-    const responseNoCookie = await get().set('Cookie', '');
-
-    expect(responseNoCookie.status).toBe(200);
-    expect(responseNoCookie.body).toEqual({ done: false });
-  });
-
-  describe('Create accessToken', () => {
+  describe('Refresh accessToken', () => {
+    let req: request.Test;
     beforeEach(async () => {
-      await init(authServer.refreshAccessToken);
+      req = testSimpleRequest(authServer.refreshAccessTokenHandler);
     });
 
     it('Returns an accessToken', async () => {
-      const response = await get();
+      const response = await req.set('Cookie', cookieStr);
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
@@ -254,20 +161,38 @@ describe('Auth with Express', () => {
     });
 
     it('Returns an error if no refreshToken is present', async () => {
-      const response = await get().set('Cookie', '');
+      const response = await req;
 
-      expect(response.status).toBe(BAD_REQUEST_CODE);
-      expect(response.body).toEqual({ message: BAD_REQUEST_MESSAGE });
+      expect(response.status).toBe(BAD_REQUEST_STATUS);
+      expect(response.text).toBe(BAD_REQUEST_MESSAGE);
     });
 
     it('Returns an error on an invalid refreshToken', async () => {
-      const response = await get().set(
-        'Cookie',
-        `${REFRESH_TOKEN_COOKIE}=xxx;`
-      );
+      const response = await req.set('Cookie', `${REFRESH_TOKEN_COOKIE}=xxx;`);
 
-      expect(response.status).toBe(BAD_REQUEST_CODE);
-      expect(response.body).toEqual({ message: BAD_REQUEST_MESSAGE });
+      expect(response.status).toBe(BAD_REQUEST_STATUS);
+      expect(response.text).toBe(BAD_REQUEST_MESSAGE);
+    });
+  });
+
+  describe('Logout', () => {
+    it('Removes the refreshToken', async () => {
+      const req = testSimpleRequest(authServer.logoutHandler);
+      const response = await req.set('Cookie', cookieStr);
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([
+        `${REFRESH_TOKEN_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
+      ]);
+      expect(response.body).toEqual({ done: true });
+    });
+
+    it('Does nothing if a refreskToken does not exists', async () => {
+      const response = await testSimpleRequest(authServer.logoutHandler);
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toBeUndefined();
+      expect(response.body).toEqual({ done: false });
     });
   });
 
@@ -275,21 +200,17 @@ describe('Auth with Express', () => {
     it('Sets req.user as the accessToken payload', async () => {
       expect.assertions(1);
 
-      await init(authServer.authorize, (req, res) => {
-        expect(req.user).toEqual(tokenPayload);
-        res.end();
-      });
-      await get();
+      await testRequest(authServer.authorize, req => {
+        expect(req.user).toEqual(data.payload);
+      }).set('Authorization', 'Bearer ' + data.accessToken);
     });
 
     it('Sets req.user as null if no accessToken is available', async () => {
       expect.assertions(1);
 
-      await init(authServer.authorize, (req, res) => {
+      await testRequest(authServer.authorize, req => {
         expect(req.user).toEqual(null);
-        res.end();
       });
-      await get().set('Authorization', '');
     });
   });
 });
