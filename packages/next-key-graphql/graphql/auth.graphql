@@ -1,0 +1,8 @@
+# Revisa el token JWT de autenticación y el scope de ser necesario
+directive @auth(
+  # En caso de ser true no se lanzara un error si no hay un token de
+  # autorización o no es válido
+  required: Boolean,
+  # Revisa que el usuario tenga ciertos permisos
+  scope: [String],
+) on FIELD_DEFINITION

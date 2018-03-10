@@ -1,0 +1,6 @@
+# Even though I don't need any query whatsoever it's not possible to use
+# mergeSchemas without defining a Query
+type Query {
+  # Returns the current version of NextKey
+  nextKeyVersion: String!
+}

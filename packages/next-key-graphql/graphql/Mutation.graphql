@@ -1,0 +1,8 @@
+# import AuthTokenData from 'AuthTokenData.graphql'
+
+type Mutation {
+  # Logouts the user
+  logout: Boolean!
+  # Refreshes the accessToken
+  refreshAccessToken: AuthTokenData!
+}
