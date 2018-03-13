@@ -18,6 +18,7 @@ started!
 ## Getting started
 
 The docs for every package are inside their own folder instead of here
+
 * next-key-client: Handles authentication for the client, supports SSR
 * next-key-server: Handles authentication in Node.js
 * next-key-micro: Handles authentication for Micro.js, Micro is almost the same
@@ -88,4 +89,125 @@ app.get('/login', (req, res) => {
 // client.js
 const accessToken = await fetch('http://localhost:3000/login')
 authClient.setAccessToken(accessToken)
+```
+
+Now, using a refreshToken
+
+```js
+// server.js
+import { ExpressAuth } from 'next-key-express'
+import jwt from 'jsonwebtoken'
+
+const secret = 'xxx'
+const refreshTokens = new Map() // use a database/redis here
+const authServer = new ExpressAuth({
+  accessToken: {
+    create(data) {
+      return jwt.sign(payload, secret)
+    },
+    verify(accessToken) {
+      return jwt.verify(accessToken, secret, {
+        algorithms: ['HS256']
+      })
+    }
+  },
+  refreshToken: {
+    async getPayload(refreshToken, reset) {
+      reset() // useful to refresh the expiration date of our refreshToken
+      return refreshTopkens.get(refreshToken)
+    },
+    async create(data) {
+      const id = 'random_id'
+      refreshTokens.set(id, data)
+      return id
+    },
+    remove(refreshToken) {
+      return refreshTokens.delete(refreshToken);
+    }
+  }
+})
+const app = express()
+
+app.get('/refresh', authServer.refreshAccessTokenHandler)
+app.get('/logout', authServer.logoutHandler)
+app.get('/login', async (req, res) => {
+  const user = { id: '123', name: 'Luis' }
+  const { refreshToken, accessToken } = await authServer.createTokens(user)
+
+  authServer.setRefreshToken(res, refreshToken)
+  authServer.setAccessToken(res, accessToken)
+})
+app.get('/profile', authServer.authorize, req => {
+  console.log(req.user) // { id: '123', name: 'Luis' } or null
+})
+app.listen(3000)
+// -----------------------------------------------------------------------
+// client.js
+import { AuthClient, HttpConnector } from 'next-key-client'
+
+const authClient = new AuthClient({
+  refreshTokenCookie: 'r_t', // This is the default cookie used by the server
+  fetchConnector: new HttpConnector({
+    refreshAccessTokenUri: 'http://localhost:3000/accessToken',
+    logoutUri: 'http://localhost:3000/logout'
+  }),
+  decode(at) {
+    try {
+      return jwtDecode(at)
+    } catch {
+      return
+    }
+  }
+})
+
+await fetch('http://localhost:3000/login')
+
+await authClient.fetchAccessToken() // returns a new accessToken
+
+await authClient.logout() // removes both tokens
+```
+
+For Next.js there is a HOC (High Order Component) available that will send
+the `accessToken` as a prop to the component
+
+```js
+// withAuth.js
+import { withAuth } from 'next-key'
+
+export default withAuth({ ...AuthClient options })
+
+// pages/page.js
+import withAuth from '../withAuth'
+
+export default withAuth(({ accessToken }) => (
+  <h1>Hello World! {accessToken}</h1>
+))
+```
+
+When using an endpoint that only cares about verifying the accessToken and
+nothing else, like a microservice, the following is also possible
+
+```js
+// auth.js
+import { MicroAuth } from 'next-key-micro'
+import jwt from 'jsonwebtoken'
+
+const secret = 'xxx'
+
+export default new MicroAuth({
+  accessToken: {
+    verify(accessToken) {
+      return jwt.verify(accessToken, secret, {
+        algorithms: ['HS256']
+      })
+    }
+  }
+})
+
+// microRoute.js
+import auth from './auth'
+
+export default auth.authorize(() => {
+  console.log(req.user) // should be the payload of the accessToken
+})
 ```
