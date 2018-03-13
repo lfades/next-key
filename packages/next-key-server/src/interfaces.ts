@@ -1,11 +1,11 @@
 export interface AuthServerOptions<CookieOptions = StringAnyMap> {
-  accessToken: AuthAccessToken;
+  accessToken: AuthAccessToken<CookieOptions>;
   refreshToken?: AuthRefreshToken<CookieOptions>;
   payload?: AuthPayload;
   scope?: AuthScope;
 }
 
-export interface AuthAccessToken {
+export interface AuthAccessToken<CookieOptions = StringAnyMap> {
   /**
    * Creates a payload based in some data
    */
@@ -18,17 +18,23 @@ export interface AuthAccessToken {
    * Verifies an accessToken and returns its payload
    */
   verify?(accessToken: string): StringAnyMap;
+  /**
+   * Returns the cookie options that will be used before creating or removing an
+   * accessToken as a cookie
+   * @param accessToken will be an empty string when removing the cookie
+   */
+  setCookie?(
+    accesssToken: string,
+    options: CookieOptions
+  ):
+    | {
+        cookieName?: string;
+        cookieOptions?: CookieOptions;
+      }
+    | undefined;
 }
 
 export interface AuthRefreshToken<CookieOptions = StringAnyMap> {
-  /**
-   * Name of the refreshToken cookie
-   */
-  cookie?: string;
-  /**
-   * Returns the cookie options that will be used when creating or removing
-   * the cookie, refreshToken will be null when removing the cookie
-   */
   cookieOptions?:
     | CookieOptions
     | ((refreshToken: string | null) => CookieOptions);
@@ -49,6 +55,20 @@ export interface AuthRefreshToken<CookieOptions = StringAnyMap> {
    * Removes the refreshToken
    */
   remove(refreshToken: string): Promise<boolean> | boolean;
+  /**
+   * Returns the cookie options that will be used before creating or removing a
+   * refreshToken as a cookie
+   * @param refreshToken will be an empty string when removing the cookie
+   */
+  setCookie?(
+    refreshToken: string,
+    options: CookieOptions
+  ):
+    | {
+        cookieName?: string;
+        cookieOptions?: CookieOptions;
+      }
+    | undefined;
 }
 
 export interface AuthScope {

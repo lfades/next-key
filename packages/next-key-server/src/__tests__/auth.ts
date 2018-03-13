@@ -6,15 +6,17 @@ import {
   Payload,
   Scope
 } from '../';
+import {
+  MISSING_AT_CREATE_MSG,
+  MISSING_AT_VERIFY_MSG,
+  MISSING_RT_MSG
+} from '../internals';
 
 describe('Auth Server', () => {
   const ONE_MINUTE = 1000 * 60;
   const ONE_DAY = ONE_MINUTE * 60 * 24;
   const ONE_MONTH = ONE_DAY * 30;
   const ACCESS_TOKEN_SECRET = 'password';
-  const MISSING_RT_MSG = 'options.refreshToken is required to use this method';
-  const MISSING_AT_CREATE_MSG = 'accessToken.create should be a function';
-  const MISSING_AT_VERIFY_MSG = 'accessToken.verify should be a function';
 
   const expiredToken =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxODE0MTIzNCwiZXhwIjoxNTE4MTQyNDM0fQ.3ZRmx08htMX5KLsv8VhBVD8vjxHzWOiDDli7JXFf83Q';

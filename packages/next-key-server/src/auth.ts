@@ -6,15 +6,16 @@ import {
   AuthServerOptions,
   StringAnyMap
 } from './interfaces';
+import {
+  MISSING_AT_CREATE_MSG,
+  MISSING_AT_VERIFY_MSG,
+  MISSING_RT_MSG
+} from './internals';
 import Payload from './payload';
 import Scope from './scope';
 
-const MISSING_RT_MSG = 'options.refreshToken is required to use this method';
-const MISSING_AT_CREATE_MSG = 'accessToken.create should be a function';
-const MISSING_AT_VERIFY_MSG = 'accessToken.verify should be a function';
-
 export default class AuthServer<CookieOptions = StringAnyMap> {
-  public accessToken: AuthAccessToken;
+  public accessToken: AuthAccessToken<CookieOptions>;
   public refreshToken?: AuthRefreshToken<CookieOptions>;
   public payload: AuthPayload;
   public scope: AuthScope;
@@ -56,7 +57,7 @@ export default class AuthServer<CookieOptions = StringAnyMap> {
     return this.refreshToken.create(data);
   }
   /**
-   * Creates both an accessToken and refreshToken
+   * Creates both accessToken and refreshToken
    */
   public async createTokens(
     data: StringAnyMap
