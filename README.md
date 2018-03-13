@@ -17,40 +17,75 @@ started!
 
 ## Getting started
 
-For a basic implementation a refreshToken is not required, in this case we're
-using an accessToken that never expires and a Express server
+The docs for every package are inside their own folder instead of here
+* next-key-client: Handles authentication for the client, supports SSR
+* next-key-server: Handles authentication in Node.js
+* next-key-micro: Handles authentication for Micro.js, Micro is almost the same
+  as a basic http server
+* next-key-express: Handles authentication for Express
+* next-key: This one is a HOC for Next.js that implements **next-key-client**
 
-### Server
+For a basic implementation a refreshToken is not required, in this case we're
+using an accessToken that never expires on a Express server, the accessToken
+is created after the user goes to `/login` and added as a cookie by the server
 
 ```js
-import { ExpressAuth } from 'next-key-express';
-import jwt from 'jsonwebtoken';
+// server.js
+import { ExpressAuth } from 'next-key-express'
+import jwt from 'jsonwebtoken'
 
 const secret = 'xxx'
 const authServer = new ExpressAuth({
   accessToken: {
     create(data) {
-      return jwt.sign(payload, secret);
+      return jwt.sign(payload, secret)
     },
     verify(accessToken) {
       return jwt.verify(accessToken, secret, {
         algorithms: ['HS256']
-      });
+      })
     }
   }
-});
+})
+const app = express()
+
+app.get('/login', (req, res) => {
+  const user = { id: '123', name: 'Luis' }
+  const { accessToken } = authServer.createAccessToken(user)
+
+  authServer.setAccessToken(res, accessToken)
+})
+app.listen(3000)
+// -----------------------------------------------------------------------
+// client.js
+import { AuthClient } from 'next-key-client'
+
+const authClient = new AuthClient({
+  decode(at) {
+    try {
+      return jwtDecode(at)
+    } catch {
+      return
+    }
+  }
+})
+
+await fetch('http://localhost:3000/login')
 ```
 
-### Client
+Sometimes is unnecessary to set the accessToken in the server, specially if the
+cookie will be available in `document.cookie`, with a little change the client
+can be the one who sets the cookie:
 
 ```js
-const authClient = new AuthClient({
-    decode(at) {
-      try {
-        return jwtDecode(at);
-      } catch {
-        return;
-      }
-    }
-  });
+// server.js
+app.get('/login', (req, res) => {
+  const user = { id: '123', name: 'Luis' }
+  const { accessToken } = authServer.createAccessToken(user)
+
+  res.json({ accessToken })
+})
+// client.js
+const accessToken = await fetch('http://localhost:3000/login')
+authClient.setAccessToken(accessToken)
 ```
