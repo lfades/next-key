@@ -1,53 +1,14 @@
-import express from 'express';
-import { Server } from 'http';
-import jwtDecode from 'jwt-decode';
 import { AuthClient, HttpConnector } from '..';
+import {
+  ACCESS_TOKEN,
+  basicAuth,
+  createServer,
+  decode,
+  RT_COOKIE
+} from '../testUtils';
 
 describe('Auth Client', () => {
-  const PORT = 5002;
-  const URL = 'http://localhost:' + PORT;
-
-  let server: Server;
-
-  const accessToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxOTA2MjY4MH0.FPnQLylqy7hfTLULsNDLNhaswFD3HI7zxRt6G-u3h9s';
-  const app = express();
-  const authClient = new AuthClient({
-    decode(at) {
-      try {
-        return jwtDecode(at);
-      } catch {
-        return;
-      }
-    },
-    refreshTokenCookie: 'r_t',
-    fetchConnector: new HttpConnector({
-      createAccessTokenUrl: URL + '/accessToken',
-      logoutUrl: URL + '/logout'
-    })
-  });
-
-  app.get('/accessToken', (_req, res) => {
-    res.json({ accessToken: 'newToken' });
-  });
-
-  app.get('/accessToken/late', (_req, res) => {
-    setTimeout(() => {
-      res.json({ accessToken: Math.random().toString(36) });
-    }, 500);
-  });
-
-  app.get('/logout', (_req, res) => {
-    res.json({ done: true });
-  });
-
-  app.get('/error', (_req, res) => {
-    res.status(400).json({ message: 'failed' });
-  });
-
-  beforeAll(() => {
-    server = app.listen(PORT);
-  });
+  const { server, authClient, url } = createServer();
 
   afterAll(() => {
     server.close();
@@ -57,62 +18,18 @@ describe('Auth Client', () => {
     authClient.removeAccessToken();
   });
 
-  describe('Can use custom options', () => {
-    it('Can use custom cookies and cookie options', () => {
-      const client = new AuthClient({
-        decode: authClient.decode,
-        fetchConnector: authClient.fetch,
-        cookie: 'custom',
-        refreshTokenCookie: 'custom', // this one is private
-        cookieOptions: { secure: false }
-      });
-
-      expect(client.cookie).toBe('custom');
-      expect(client.cookieOptions).toEqual({ secure: false });
-    });
-
-    it('Can use a function in cookieOptions', () => {
-      expect.assertions(2);
-
-      const client = new AuthClient({
-        decode: authClient.decode,
-        fetchConnector: authClient.fetch,
-        cookieOptions(at?: string) {
-          expect(at).toBe(accessToken);
-          return { secure: false };
-        }
-      });
-
-      expect(typeof client.cookieOptions).toBe('function');
-      client.setAccessToken(accessToken);
-    });
-  });
-
-  it('Adds an accessToken to cookies', () => {
-    expect(authClient.setAccessToken('')).toBeUndefined();
-    expect(authClient.setAccessToken(accessToken)).toBe(accessToken);
-  });
-
   it('Returns the accessToken from cookies', () => {
     expect(authClient.getAccessToken()).toBeUndefined();
 
-    authClient.setAccessToken(accessToken);
+    authClient.setAccessToken(ACCESS_TOKEN);
 
-    expect(authClient.getAccessToken()).toBe(accessToken);
-  });
-
-  it('Removes the accessToken', () => {
-    authClient.setAccessToken(accessToken);
-
-    expect(authClient.getAccessToken()).toBe(accessToken);
-    expect(authClient.removeAccessToken()).toBeUndefined();
-    expect(authClient.getAccessToken()).toBeUndefined();
+    expect(authClient.getAccessToken()).toBe(ACCESS_TOKEN);
   });
 
   it('Decodes an accessToken', () => {
     expect(authClient.decodeAccessToken('')).toBeNull();
     expect(authClient.decodeAccessToken('invalid')).toBeNull();
-    expect(authClient.decodeAccessToken(accessToken)).toEqual({
+    expect(authClient.decodeAccessToken(ACCESS_TOKEN)).toEqual({
       uId: 'user_123',
       cId: 'company_123',
       scope: 'a:r:w',
@@ -120,46 +37,88 @@ describe('Auth Client', () => {
     });
   });
 
-  it('Logouts', async () => {
-    authClient.setAccessToken(accessToken);
+  it('Adds an accessToken to cookies', () => {
+    expect(authClient.setAccessToken('')).toBeUndefined();
+    expect(authClient.setAccessToken(ACCESS_TOKEN)).toBe(ACCESS_TOKEN);
+  });
 
-    expect(authClient.getAccessToken()).toBe(accessToken);
-    expect(await authClient.logout()).toEqual({ done: true });
+  it('Removes the accessToken', () => {
+    authClient.setAccessToken(ACCESS_TOKEN);
+
+    expect(authClient.getAccessToken()).toBe(ACCESS_TOKEN);
+    expect(authClient.removeAccessToken()).toBeUndefined();
     expect(authClient.getAccessToken()).toBeUndefined();
   });
 
+  describe('Logout', () => {
+    it('Returns undefined if this.fetch is undefined', async () => {
+      authClient.setAccessToken(ACCESS_TOKEN);
+
+      expect(await basicAuth.logout()).toBeUndefined();
+      expect(authClient.getAccessToken()).toBeUndefined();
+    });
+
+    it('logouts the user', async () => {
+      authClient.setAccessToken(ACCESS_TOKEN);
+
+      expect(await authClient.logout()).toEqual({ done: true });
+      expect(authClient.getAccessToken()).toBeUndefined();
+    });
+  });
+
   describe('fetch a new accessToken', () => {
+    it('Returns undefined if this.fetch is undefined', async () => {
+      expect(await basicAuth.fetchAccessToken()).toBeUndefined();
+    });
+
     it('Returns undefined if refreshTokenCookie is undefined', async () => {
       const client = new AuthClient({
-        decode: authClient.decode,
+        decode,
         fetchConnector: authClient.fetch
       });
 
-      client.setAccessToken('invalid');
       expect(await client.fetchAccessToken()).toBeUndefined();
     });
 
-    it('Returns undefined if no current token is present', async () => {
+    it('Returns undefined if no accessToken is present', async () => {
       expect(await authClient.fetchAccessToken()).toBeUndefined();
     });
 
-    it('Should use the current token if its still valid', async () => {
-      authClient.setAccessToken(accessToken);
-      expect(await authClient.fetchAccessToken()).toBe(accessToken);
+    it('Should use the current accessToken if its still valid', async () => {
+      authClient.setAccessToken(ACCESS_TOKEN);
+      expect(await authClient.fetchAccessToken()).toBe(ACCESS_TOKEN);
     });
 
     it('Returns a new token', async () => {
-      authClient.setAccessToken('invalid');
+      authClient.setAccessToken('xxx');
       expect(await authClient.fetchAccessToken()).toBe('newToken');
+    });
+
+    it('Removes the accessToken and not throws a fetchError', async () => {
+      const client = new AuthClient({
+        decode() {
+          // this will make decode fail
+        },
+        refreshTokenCookie: RT_COOKIE,
+        fetchConnector: new HttpConnector({
+          createAccessTokenUrl: url + '/error',
+          logoutUrl: ''
+        })
+      });
+
+      client.setAccessToken(ACCESS_TOKEN);
+
+      expect(await client.fetchAccessToken()).toBeUndefined();
+      expect(client.getAccessToken()).toBeUndefined();
     });
 
     it('Should use the same fetch when called multiple times', async () => {
       const client = new AuthClient({
-        decode: authClient.decode,
-        refreshTokenCookie: 'r_t',
+        decode,
+        refreshTokenCookie: RT_COOKIE,
         fetchConnector: new HttpConnector({
-          createAccessTokenUrl: URL + '/accessToken/late',
-          logoutUrl: 'x'
+          createAccessTokenUrl: url + '/accessToken/late',
+          logoutUrl: ''
         })
       });
 
@@ -180,40 +139,39 @@ describe('Auth Client', () => {
   describe('Throws an error', () => {
     const client = new AuthClient({
       decode() {
-        // this will make decode fails
+        // this will make decode fail
       },
-      refreshTokenCookie: 'r_t',
+      refreshTokenCookie: RT_COOKIE,
       fetchConnector: new HttpConnector({
-        createAccessTokenUrl: URL + '/error',
-        logoutUrl: URL + '/error'
+        createAccessTokenUrl: '', // NetworkError
+        logoutUrl: url + '/error'
       })
     });
 
     it('When the logout fails', async () => {
-      client.setAccessToken(accessToken);
+      client.setAccessToken(ACCESS_TOKEN);
 
       expect.assertions(3);
 
       try {
         await client.logout();
       } catch (e) {
-        expect(client.getAccessToken()).toBe(accessToken);
+        expect(client.getAccessToken()).toBe(ACCESS_TOKEN);
         expect(e.name).toBe('FetchError');
         expect(e.res).toBeDefined();
       }
     });
 
-    it('When a fetch for a new accessToken fails', async () => {
-      client.setAccessToken(accessToken);
+    it('When a fetch for a new accessToken throws a NetworkError', async () => {
+      client.setAccessToken(ACCESS_TOKEN);
 
-      expect.assertions(3);
+      expect.assertions(2);
 
       try {
         await client.fetchAccessToken();
       } catch (e) {
-        expect(client.getAccessToken()).toBe(accessToken);
-        expect(e.name).toBe('FetchError');
-        expect(e.res).toBeDefined();
+        expect(client.getAccessToken()).toBe(ACCESS_TOKEN);
+        expect(e.name).toBe('NetworkError');
       }
     });
   });

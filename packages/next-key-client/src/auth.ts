@@ -2,6 +2,8 @@ import { IncomingMessage } from 'http';
 import Cookies, { CookieAttributes } from 'js-cookie';
 import { FetchConnector } from './connectors/utils';
 
+const AT_COOKIE = 'a_t';
+
 export type CookieOptions =
   | CookieAttributes
   | ((accessToken?: string) => CookieAttributes);
@@ -16,7 +18,7 @@ export interface AuthClientOptions {
   cookie?: string;
   cookieOptions?: CookieOptions;
   decode: Decode;
-  fetchConnector: FetchConnector;
+  fetchConnector?: FetchConnector;
   refreshTokenCookie?: string;
   getTokens?: GetTokens;
 }
@@ -25,7 +27,7 @@ export class AuthClient {
   public cookie: string;
   public cookieOptions?: CookieOptions;
   public decode: Decode;
-  public fetch: FetchConnector;
+  public fetch?: FetchConnector;
 
   private refreshTokenCookie?: string;
   private getTokens: GetTokens;
@@ -33,7 +35,7 @@ export class AuthClient {
 
   constructor(options: AuthClientOptions) {
     // Public
-    this.cookie = options.cookie || 'a_t';
+    this.cookie = options.cookie || AT_COOKIE;
     this.cookieOptions = options.cookieOptions;
     this.decode = options.decode;
     this.fetch = options.fetchConnector;
@@ -79,6 +81,10 @@ export class AuthClient {
    */
   public async logout() {
     if (typeof window === 'undefined') return;
+    if (!this.fetch) {
+      this.removeAccessToken();
+      return;
+    }
 
     return this.fetch.logout({ credentials: 'same-origin' }).then(json => {
       this.removeAccessToken();
@@ -91,11 +97,15 @@ export class AuthClient {
    */
   public async fetchAccessToken(req?: IncomingMessage) {
     try {
-      return req ? this.fetchServerToken(req) : this.fetchClientToken();
+      return await (req ? this.fetchServerToken(req) : this.fetchClientToken());
     } catch (err) {
+      const isFetchError = err.name === 'FetchError';
+      const isNetworkError = err.name === 'NetworkError';
+
+      if (!isFetchError && !isNetworkError) throw err;
       // Ignore errors in the server
       if (req) return;
-      if (err.name !== 'FetchError') throw err;
+      if (!isFetchError) throw err;
       // Remove the accessToken that caused a FetchError
       this.removeAccessToken();
     }
@@ -111,14 +121,13 @@ export class AuthClient {
    * invalid then it will fetch a new accessToken
    */
   private async fetchServerToken(req: IncomingMessage) {
+    if (!this.fetch) return;
     if (!this.withRefreshToken()) return;
 
     const tokens = this.getTokens(req);
-
     if (!tokens || !tokens.refreshToken) return;
 
     const accessToken = this.verifyAccessToken(tokens.accessToken || '');
-
     if (accessToken) return accessToken;
 
     const data = await this.fetch.createAccessToken({
@@ -133,6 +142,7 @@ export class AuthClient {
    * invalid then it will fetch a new accessToken
    */
   private async fetchClientToken() {
+    if (!this.fetch) return;
     if (!this.withRefreshToken()) return;
 
     const _accessToken = this.getAccessToken();
