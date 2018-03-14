@@ -180,7 +180,7 @@ describe('Auth Connector', () => {
       expect.assertions(1);
 
       const refreshToken = await auth.createRefreshToken(userData);
-      const cookie = auth.serialize(refreshToken);
+      const cookie = auth.serializeRefreshToken(refreshToken);
 
       await testRequest(async (req, res) => {
         const connector = new AuthConnector({ auth, req, res });
@@ -201,7 +201,7 @@ describe('Auth Connector', () => {
       expect.assertions(1);
 
       const refreshToken = await auth.createRefreshToken(userData);
-      const cookie = auth.serialize(refreshToken);
+      const cookie = auth.serializeRefreshToken(refreshToken);
 
       await testRequest(async (req, res) => {
         const connector = new AuthConnector({ auth, req, res });

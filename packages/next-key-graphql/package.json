@@ -1,6 +1,6 @@
 {
   "name": "next-key-graphql",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "next-key integration for Graphql",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -31,12 +31,12 @@
     "@types/supertest": "^2.0.4",
     "jest": "^22.4.2",
     "jsonwebtoken": "^8.1.1",
-    "micro": "^9.1.0",
+    "micro": "^9.1.4",
     "prettier": "^1.11.1",
     "supertest": "^3.0.0",
     "ts-jest": "^22.0.4",
     "tslint": "^5.9.1",
-    "tslint-config-prettier": "^1.8.0",
+    "tslint-config-prettier": "^1.10.0",
     "tslint-eslint-rules": "^4.1.1",
     "tslint-plugin-prettier": "^1.3.0",
     "typescript": "^2.7.2"
@@ -46,7 +46,7 @@
     "@types/node": "^9.4.7",
     "graphql": "^0.13.1",
     "graphql-import": "^0.4.5",
-    "graphql-tools": "^2.21.0",
-    "next-key-micro": "^1.0.0"
+    "graphql-tools": "^2.22.0",
+    "next-key-micro": "^1.0.1"
   }
 }
