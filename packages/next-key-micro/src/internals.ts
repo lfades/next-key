@@ -3,6 +3,8 @@
  */
 export const RT_COOKIE = 'r_t';
 
+export const AT_COOKIE = 'a_t';
+
 export const MISSING_RT_MESSAGE = 'refreshToken is required to use this method';
 
 export const INTERNAL_ERROR_STATUS = 500;

@@ -9,6 +9,7 @@ import MicroAuth, {
   Scope
 } from '..';
 import {
+  AT_COOKIE,
   BAD_REQUEST_MESSAGE,
   BAD_REQUEST_STATUS,
   MISSING_RT_MESSAGE,
@@ -19,9 +20,16 @@ import { run } from '../utils';
 describe('Auth with Micro', () => {
   const ACCESS_TOKEN_SECRET = 'password';
   const REFRESH_TOKEN_COOKIE = 'aei';
+  const ACCESS_TOKEN_COOKIE = 'abc';
   const refreshTokens = new Map();
 
   class AccessToken implements AuthAccessToken {
+    public cookie = ACCESS_TOKEN_COOKIE;
+    public cookieOptions() {
+      return {
+        secure: false
+      };
+    }
     public getPayload({ id, companyId }: { id: string; companyId: string }) {
       const scope = authScope.create(['admin:read', 'admin:write']);
       return { id, companyId, scope };
@@ -83,7 +91,8 @@ describe('Auth with Micro', () => {
     companyId: 'company_123'
   };
 
-  let cookieStr: string;
+  let rtCookieStr: string;
+  let atCookieStr: string;
   let data: {
     accessToken: string;
     refreshToken: string;
@@ -103,7 +112,8 @@ describe('Auth with Micro', () => {
 
   const initData = async () => {
     data = await authServer.createTokens(userPayload);
-    cookieStr = authServer.serialize(data.refreshToken);
+    rtCookieStr = authServer.serializeRefreshToken(data.refreshToken);
+    atCookieStr = authServer.serializeAccessToken(data.accessToken);
   };
 
   beforeEach(initData);
@@ -115,7 +125,7 @@ describe('Auth with Micro', () => {
     });
 
     it('Returns an accessToken', async () => {
-      const response = await req.set('Cookie', cookieStr);
+      const response = await req.set('Cookie', rtCookieStr);
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
@@ -141,7 +151,7 @@ describe('Auth with Micro', () => {
   describe('Logout', () => {
     it('Removes the refreshToken', async () => {
       const req = testSimpleRequest(authServer.logoutHandler);
-      const response = await req.set('Cookie', cookieStr);
+      const response = await req.set('Cookie', rtCookieStr);
 
       expect(response.status).toBe(200);
       expect(response.get('Set-Cookie')).toEqual([
@@ -181,14 +191,6 @@ describe('Auth with Micro', () => {
     });
   });
 
-  it('Gets the accessToken from headers', async () => {
-    expect.assertions(1);
-
-    await testRequest(req => {
-      expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
-    }).set('Authorization', 'Bearer ' + data.accessToken);
-  });
-
   describe('Get refreshToken', () => {
     it('Returns null for an empty cookie', async () => {
       expect.assertions(2);
@@ -207,8 +209,16 @@ describe('Auth with Micro', () => {
 
       await testRequest(req => {
         expect(authServer.getRefreshToken(req.headers)).toBe(data.refreshToken);
-      }).set('Cookie', cookieStr);
+      }).set('Cookie', rtCookieStr);
     });
+  });
+
+  it('Gets the accessToken from headers', async () => {
+    expect.assertions(1);
+
+    await testRequest(req => {
+      expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
+    }).set('Authorization', 'Bearer ' + data.accessToken);
   });
 
   describe('setRefreshToken', () => {
@@ -218,7 +228,7 @@ describe('Auth with Micro', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(response.get('Set-Cookie')).toEqual([cookieStr]);
+      expect(response.get('Set-Cookie')).toEqual([rtCookieStr]);
     });
 
     it('Concats the cookie', async () => {
@@ -230,7 +240,7 @@ describe('Auth with Micro', () => {
         res.setHeader('Set-Cookie', asArray ? [cookie] : cookie);
         authServer.setRefreshToken(res, data.refreshToken);
 
-        expect(res.getHeader('Set-Cookie')).toEqual([cookie, cookieStr]);
+        expect(res.getHeader('Set-Cookie')).toEqual([cookie, rtCookieStr]);
       };
 
       await testRequest(handle(true));
@@ -238,11 +248,22 @@ describe('Auth with Micro', () => {
     });
   });
 
-  describe('getCookieName', () => {
+  it('Sets the accessToken as a cookie', async () => {
+    const response = await testRequest((_req, res) => {
+      authServer.setAccessToken(res, data.accessToken);
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.get('Set-Cookie')).toEqual([atCookieStr]);
+  });
+
+  describe('getRefreshTokenName', () => {
     it('Throws an error if refreshToken is undefined', async () => {
       const auth = new MicroAuth({ accessToken: new AccessToken() });
 
-      expect(auth.getCookieName.bind(auth)).toThrowError(MISSING_RT_MESSAGE);
+      expect(auth.getRefreshTokenName.bind(auth)).toThrowError(
+        MISSING_RT_MESSAGE
+      );
     });
 
     it('Can use a default value', () => {
@@ -251,20 +272,34 @@ describe('Auth with Micro', () => {
         refreshToken: Object.assign(new RefreshToken(), { cookie: undefined })
       });
 
-      expect(auth.getCookieName()).toBe(RT_COOKIE);
+      expect(auth.getRefreshTokenName()).toBe(RT_COOKIE);
     });
 
     it('Returns the cookie name', () => {
-      expect(authServer.getCookieName()).toBe(REFRESH_TOKEN_COOKIE);
+      expect(authServer.getRefreshTokenName()).toBe(REFRESH_TOKEN_COOKIE);
     });
   });
 
-  describe('getCookieOptions', () => {
+  describe('getAccessTokenName', () => {
+    it('Can use a default value', () => {
+      const auth = new MicroAuth({
+        accessToken: Object.assign(new AccessToken(), { cookie: undefined })
+      });
+
+      expect(auth.getAccessTokenName()).toBe(AT_COOKIE);
+    });
+
+    it('Returns the cookie name', () => {
+      expect(authServer.getAccessTokenName()).toBe(ACCESS_TOKEN_COOKIE);
+    });
+  });
+
+  describe('getRefreshTokenOptions', () => {
     const options = { httpOnly: true, path: '/' };
 
     it('Throws an error if refreshToken is undefined', async () => {
       const auth = new MicroAuth({ accessToken: new AccessToken() });
-      const fn = auth.getCookieOptions.bind(auth, data.refreshToken);
+      const fn = auth.getRefreshTokenOptions.bind(auth, data.refreshToken);
 
       expect(fn).toThrowError(MISSING_RT_MESSAGE);
     });
@@ -277,11 +312,11 @@ describe('Auth with Micro', () => {
         })
       });
 
-      expect(auth.getCookieOptions(data.refreshToken)).toEqual(options);
+      expect(auth.getRefreshTokenOptions(data.refreshToken)).toEqual(options);
     });
 
     it('Returns an expired date when removing a cookie', () => {
-      expect(authServer.getCookieOptions('')).toEqual({
+      expect(authServer.getRefreshTokenOptions('')).toEqual({
         expires: new Date(1),
         secure: false,
         ...options
@@ -289,7 +324,36 @@ describe('Auth with Micro', () => {
     });
 
     it('Returns the cookie options', () => {
-      expect(authServer.getCookieOptions(data.refreshToken)).toEqual({
+      expect(authServer.getRefreshTokenOptions(data.refreshToken)).toEqual({
+        secure: false,
+        ...options
+      });
+    });
+  });
+
+  describe('getAccessTokenOptions', () => {
+    const options = { path: '/' };
+
+    it('Uses default options', () => {
+      const auth = new MicroAuth({
+        accessToken: Object.assign(new AccessToken(), {
+          cookieOptions: undefined
+        })
+      });
+
+      expect(auth.getAccessTokenOptions(data.accessToken)).toEqual(options);
+    });
+
+    it('Returns an expired date when removing a cookie', () => {
+      expect(authServer.getAccessTokenOptions('')).toEqual({
+        expires: new Date(1),
+        secure: false,
+        ...options
+      });
+    });
+
+    it('Returns the cookie options', () => {
+      expect(authServer.getAccessTokenOptions(data.accessToken)).toEqual({
         secure: false,
         ...options
       });
