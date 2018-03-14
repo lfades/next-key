@@ -13,8 +13,8 @@ describe('Http connector', () => {
   const accessToken = '12345';
   const app = express();
   const connector = new HttpConnector({
-    createAccessTokenUrl: URL + '/accessToken',
-    logoutUrl: URL + '/logout'
+    refreshAccessTokenUri: URL + '/accessToken',
+    logoutUri: URL + '/logout'
   });
 
   app.get('/accessToken', (_req, res) => {
@@ -60,8 +60,8 @@ describe('Http connector', () => {
 
   it('Throws a FetchError with a custom error object', async () => {
     const c = new HttpConnector({
-      createAccessTokenUrl: URL + '/customErrorMsg',
-      logoutUrl: URL + '/customErrorCode'
+      refreshAccessTokenUri: URL + '/customErrorMsg',
+      logoutUri: URL + '/customErrorCode'
     });
 
     expect.assertions(10);
@@ -89,8 +89,8 @@ describe('Http connector', () => {
 
   it('Throws a FetchError on invalid status code', async () => {
     const c = new HttpConnector({
-      createAccessTokenUrl: URL + '/error',
-      logoutUrl: ''
+      refreshAccessTokenUri: URL + '/error',
+      logoutUri: ''
     });
 
     expect.assertions(4);
@@ -107,8 +107,8 @@ describe('Http connector', () => {
 
   it('Throws a NetworkError for invalid requests', async () => {
     const c = new HttpConnector({
-      createAccessTokenUrl: '',
-      logoutUrl: 'invalid url'
+      refreshAccessTokenUri: '',
+      logoutUri: 'invalid url'
     });
 
     expect.assertions(4);

@@ -67,8 +67,8 @@ describe('Auth Server', () => {
         },
         refreshTokenCookie: RT_COOKIE,
         fetchConnector: new HttpConnector({
-          createAccessTokenUrl: url + '/error',
-          logoutUrl: ''
+          refreshAccessTokenUri: url + '/error',
+          logoutUri: ''
         })
       });
 

@@ -21,8 +21,8 @@ export const decode = (at: string) => {
 };
 
 export const fetchConnector = new HttpConnector({
-  createAccessTokenUrl: '',
-  logoutUrl: ''
+  refreshAccessTokenUri: '',
+  logoutUri: ''
 });
 
 export const basicAuth = new AuthClient({ decode });
@@ -59,8 +59,8 @@ export const createServer = (): {
     decode,
     refreshTokenCookie: 'r_t',
     fetchConnector: new HttpConnector({
-      createAccessTokenUrl: `${url}/accessToken`,
-      logoutUrl: `${url}/logout`
+      refreshAccessTokenUri: `${url}/accessToken`,
+      logoutUri: `${url}/logout`
     })
   });
 

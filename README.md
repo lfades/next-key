@@ -99,7 +99,7 @@ import { ExpressAuth } from 'next-key-express'
 import jwt from 'jsonwebtoken'
 
 const secret = 'xxx'
-const refreshTokens = new Map() // use a database/redis here
+const refreshTokens = new Map() // use a database/redis/etc here
 const authServer = new ExpressAuth({
   accessToken: {
     create(data) {
@@ -114,7 +114,7 @@ const authServer = new ExpressAuth({
   refreshToken: {
     async getPayload(refreshToken, reset) {
       reset() // useful to refresh the expiration date of our refreshToken
-      return refreshTopkens.get(refreshToken)
+      return refreshTokens.get(refreshToken)
     },
     async create(data) {
       const id = 'random_id'

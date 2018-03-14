@@ -6,27 +6,27 @@ import { FetchConnector, FetchError, NetworkError } from './utils';
 const fetch = unfetch;
 
 export interface HttpConnectorOptions {
-  createAccessTokenUrl: string;
-  logoutUrl: string;
+  refreshAccessTokenUri: string;
+  logoutUri: string;
 }
 
 export default class HttpConnector implements FetchConnector {
-  private createAccessTokenUrl: string;
-  private logoutUrl: string;
+  private refreshAccessTokenUri: string;
+  private logoutUri: string;
 
   constructor(options: HttpConnectorOptions) {
-    this.createAccessTokenUrl = options.createAccessTokenUrl;
-    this.logoutUrl = options.logoutUrl;
+    this.refreshAccessTokenUri = options.refreshAccessTokenUri;
+    this.logoutUri = options.logoutUri;
   }
 
   public createAccessToken(
     fetchOptions: RequestInit
   ): Promise<{ accessToken: string }> {
-    return this.fetch(this.createAccessTokenUrl, fetchOptions);
+    return this.fetch(this.refreshAccessTokenUri, fetchOptions);
   }
 
   public logout(fetchOptions: RequestInit): Promise<{ done: boolean }> {
-    return this.fetch(this.logoutUrl, fetchOptions);
+    return this.fetch(this.logoutUri, fetchOptions);
   }
 
   private async fetch(url: string, fetchOptions: RequestInit) {

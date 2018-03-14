@@ -101,8 +101,8 @@ describe('Auth Client', () => {
         },
         refreshTokenCookie: RT_COOKIE,
         fetchConnector: new HttpConnector({
-          createAccessTokenUrl: url + '/error',
-          logoutUrl: ''
+          refreshAccessTokenUri: url + '/error',
+          logoutUri: ''
         })
       });
 
@@ -117,8 +117,8 @@ describe('Auth Client', () => {
         decode,
         refreshTokenCookie: RT_COOKIE,
         fetchConnector: new HttpConnector({
-          createAccessTokenUrl: url + '/accessToken/late',
-          logoutUrl: ''
+          refreshAccessTokenUri: url + '/accessToken/late',
+          logoutUri: ''
         })
       });
 
@@ -143,8 +143,8 @@ describe('Auth Client', () => {
       },
       refreshTokenCookie: RT_COOKIE,
       fetchConnector: new HttpConnector({
-        createAccessTokenUrl: '', // NetworkError
-        logoutUrl: url + '/error'
+        refreshAccessTokenUri: '', // NetworkError
+        logoutUri: url + '/error'
       })
     });
 
