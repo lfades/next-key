@@ -56,7 +56,7 @@ export class AuthClient {
     return (accessToken && this.decode(accessToken)) || null;
   }
   /**
-   * Adds an accessToken to a cookie and return the accessToken
+   * Sets an accessToken as a cookie and returns the accessToken
    */
   public setAccessToken(accessToken: string) {
     if (!accessToken) return;
@@ -83,7 +83,7 @@ export class AuthClient {
     if (typeof window === 'undefined') return;
     if (!this.fetch) {
       this.removeAccessToken();
-      return;
+      return { done: true };
     }
 
     return this.fetch.logout({ credentials: 'same-origin' }).then(json => {

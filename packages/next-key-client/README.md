@@ -60,9 +60,7 @@ decode: (accessToken: string) => object | null | void
 
 #### fetchConnector
 
-Connector that will be used to connector the `AuthClient` with the server, not
-using this means that you don't need a `refreshToken` because an `accessToken`
-can be entirely handle by the client
+A [connector](#connectors) to connect `AuthClient` with a server, not using this means that you don't need a `refreshToken` because an `accessToken` can be entirely handled by the client
 
 ```ts
 fetchConnector?: FetchConnector
@@ -107,3 +105,58 @@ function getTokens(req) {
 ```
 
 ---
+
+After creating the `AuthClient` the following methods are available
+
+#### `getAccessToken(): string`
+
+Returns the accessToken from cookies
+
+#### `setAccessToken(accessToken: string): string`
+
+Sets an accessToken as a cookie
+
+#### `removeAccessToken(): void`
+
+Removes the accessToken from cookies, if you're not using a `refreshToken`, this
+does the same of `logout`
+
+#### `fetchAccessToken(req?: IncomingMessage): Promise<string>`
+
+Request a new accessToken, sending `req` means that the token will be
+created during SSR
+
+#### `logout(): Promise<{ done: boolean }>`
+
+Logouts the user, this means remove both accessToken and refreshToken from
+cookies, it's client side only
+
+### Connectors
+
+A connector will allow `AuthClient` to connect with a server, required only
+when you're working with a `refreshToken`, that are usually very secure and
+`httpOnly`
+
+#### HttpConnector
+
+Connects the client with a REST API
+
+```ts
+new HttpConnector({
+  refreshAccessTokenUri: string;
+  logoutUri: string;
+}): HttpConnector
+```
+
+The implementation should look like this
+
+```js
+import { AuthClient, HttpConnector } from 'next-key-client'
+
+const authClient = new AuthClient({
+  fetchConnector: new HttpConnector({
+    refreshAccessTokenUri: 'http://localhost:3000/refresh',
+    logoutUri: 'http://localhost:3000/logout'
+  })
+})
+```
