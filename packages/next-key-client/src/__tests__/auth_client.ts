@@ -51,11 +51,11 @@ describe('Auth Client', () => {
   });
 
   describe('Logout', () => {
-    it('Returns undefined if this.fetch is undefined', async () => {
-      authClient.setAccessToken(ACCESS_TOKEN);
+    it('Removes the accessToken if this.fetch is undefined', async () => {
+      basicAuth.setAccessToken(ACCESS_TOKEN);
 
-      expect(await basicAuth.logout()).toBeUndefined();
-      expect(authClient.getAccessToken()).toBeUndefined();
+      expect(await basicAuth.logout()).toEqual({ done: true });
+      expect(basicAuth.getAccessToken()).toBeUndefined();
     });
 
     it('logouts the user', async () => {
