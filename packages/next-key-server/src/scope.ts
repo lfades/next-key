@@ -58,4 +58,13 @@ export default class Scope implements AuthScope {
 
     return scopeStr.split('|').reduce(pushRoles, []);
   }
+  /**
+   * Checks whether or not a perm is included in a parsed scope
+   */
+  public has(scope: string[], perm: string | string[]) {
+    const perms = Array.isArray(perm) ? perm : [perm];
+    const withPerm = (p: string) => perms.indexOf(p) !== -1;
+
+    return !!scope.find(withPerm);
+  }
 }

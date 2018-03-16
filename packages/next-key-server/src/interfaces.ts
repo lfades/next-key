@@ -63,6 +63,7 @@ export interface AuthRefreshToken<CookieOptions = StringAnyMap> {
 export interface AuthScope {
   create(scope: string[]): string;
   parse(scope: string): string[];
+  has(scope: string[], perm: string | string[]): boolean;
 }
 
 export interface AuthPayload {

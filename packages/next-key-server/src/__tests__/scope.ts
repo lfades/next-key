@@ -22,6 +22,8 @@ describe('Auth Scope', () => {
     'web:something'
   ];
 
+  const validScope = ['admin:read', 'admin:write'];
+
   it('Creates a valid scope', () => {
     expect(scope.create([])).toBe('');
     expect(scope.create(scopeArr)).toBe(scopeStr);
@@ -43,5 +45,11 @@ describe('Auth Scope', () => {
     expect(scope.parse('invalidstring')).toEqual([]);
     expect(scope.parse('invalid|string')).toEqual([]);
     expect(scope.parse(scopeStr)).toEqual(scopeArr);
+  });
+
+  it('Checks for permissions', () => {
+    expect(scope.has([], validScope)).toBe(false);
+    expect(scope.has(scopeArr, 'xxx')).toBe(false);
+    expect(scope.has(scopeArr, validScope)).toBe(true);
   });
 });
