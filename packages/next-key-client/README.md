@@ -106,7 +106,7 @@ function getTokens(req) {
 
 ---
 
-After creating the `AuthClient` the following methods are available
+After creating an instance of `AuthClient` the following methods are available
 
 #### `getAccessToken(): string`
 
