@@ -148,7 +148,7 @@ import { AuthClient, HttpConnector } from 'next-key-client'
 const authClient = new AuthClient({
   refreshTokenCookie: 'r_t', // This is the default cookie used by the server
   fetchConnector: new HttpConnector({
-    refreshAccessTokenUri: 'http://localhost:3000/accessToken',
+    refreshAccessTokenUri: 'http://localhost:3000/refresh',
     logoutUri: 'http://localhost:3000/logout'
   }),
   decode(at) {
@@ -204,10 +204,10 @@ export default new MicroAuth({
   }
 })
 
-// microRoute.js
+// microRoute.js - using Micro.js
 import auth from './auth'
 
-export default auth.authorize(() => {
-  console.log(req.user) // should be the payload of the accessToken
-})
+module.exports = req => {
+  const user = auth.getUser(req) // is the payload of the accessToken or null
+}
 ```
