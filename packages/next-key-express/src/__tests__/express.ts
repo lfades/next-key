@@ -9,11 +9,15 @@ import ExpressAuth, {
   run,
   Scope
 } from '..';
-import { BAD_REQUEST_MESSAGE, BAD_REQUEST_STATUS } from '../internals';
+import {
+  AT_COOKIE,
+  BAD_REQUEST_MESSAGE,
+  BAD_REQUEST_STATUS,
+  RT_COOKIE
+} from '../internals';
 
 describe('Auth with Express', () => {
   const ACCESS_TOKEN_SECRET = 'password';
-  const REFRESH_TOKEN_COOKIE = 'aei';
   const COOKIE_PARSER_SECRET = 'secret';
   const refreshTokens = new Map();
 
@@ -35,7 +39,7 @@ describe('Auth with Express', () => {
   }
 
   class RefreshToken implements AuthRefreshToken {
-    public cookie: string = REFRESH_TOKEN_COOKIE;
+    public cookie: string = RT_COOKIE;
     public cookieOptions() {
       return {
         signed: true
@@ -119,19 +123,12 @@ describe('Auth with Express', () => {
 
   beforeEach(initData);
 
-  it('Sets the refreshToken as a cookie', async () => {
-    const response = await initCookieStr();
-
-    expect(response.status).toBe(200);
-    expect(response.get('Set-Cookie')).toEqual([cookieStr]);
-  });
-
   it('Gets the refreshToken from cookies', async () => {
     expect.assertions(2);
 
     await testRequest(req => {
       expect(req.signedCookies).toEqual({
-        [REFRESH_TOKEN_COOKIE]: data.refreshToken
+        [RT_COOKIE]: data.refreshToken
       });
       expect(authServer.getRefreshToken(req)).toBe(data.refreshToken);
     }).set('Cookie', cookieStr);
@@ -143,6 +140,51 @@ describe('Auth with Express', () => {
     await testRequest(req => {
       expect(authServer.getAccessToken(req.headers)).toEqual(data.accessToken);
     }).set('Authorization', 'Bearer ' + data.accessToken);
+  });
+
+  describe('setRefreshToken', () => {
+    it('Sets the refreshToken as a cookie', async () => {
+      const response = await initCookieStr();
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([cookieStr]);
+    });
+
+    it('Removes the refreshToken when using an empty string', async () => {
+      cookieStr = `${RT_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`;
+
+      const response = await testRequest((_req, res) => {
+        authServer.setRefreshToken(res, '');
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([cookieStr]);
+    });
+  });
+
+  describe('setAccessToken', () => {
+    it('Sets the accessToken as a cookie', async () => {
+      let atCookieStr: string = '';
+
+      const response = await testRequest((_req, res) => {
+        authServer.setAccessToken(res, data.accessToken);
+        atCookieStr = res.get('Set-Cookie');
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([atCookieStr]);
+    });
+
+    it('Removes the accessToken when using an empty string', async () => {
+      const atCookieStr = `${AT_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+
+      const response = await testRequest((_req, res) => {
+        authServer.setAccessToken(res, '');
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.get('Set-Cookie')).toEqual([atCookieStr]);
+    });
   });
 
   describe('Refresh accessToken', () => {
@@ -168,7 +210,7 @@ describe('Auth with Express', () => {
     });
 
     it('Returns an error on an invalid refreshToken', async () => {
-      const response = await req.set('Cookie', `${REFRESH_TOKEN_COOKIE}=xxx;`);
+      const response = await req.set('Cookie', `${RT_COOKIE}=xxx;`);
 
       expect(response.status).toBe(BAD_REQUEST_STATUS);
       expect(response.text).toBe(BAD_REQUEST_MESSAGE);
@@ -182,7 +224,7 @@ describe('Auth with Express', () => {
 
       expect(response.status).toBe(200);
       expect(response.get('Set-Cookie')).toEqual([
-        `${REFRESH_TOKEN_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
+        `${RT_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
       ]);
       expect(response.body).toEqual({ done: true });
     });

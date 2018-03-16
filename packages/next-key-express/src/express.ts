@@ -66,16 +66,10 @@ export default class ExpressAuth extends AuthServer<CookieOptions> {
     next();
   };
   /**
-   * Returns the accessToken from headers
-   */
-  public getAccessToken(headers: http.IncomingHttpHeaders) {
-    return this.micro.getAccessToken(headers);
-  }
-  /**
    * Returns the refreshToken from cookies
    */
   public getRefreshToken(req: Request): string | null {
-    const cookieName = this.micro.getCookieName();
+    const cookieName = this.micro.getRefreshTokenName();
 
     return (
       (req.signedCookies && req.signedCookies[cookieName]) ||
@@ -84,12 +78,18 @@ export default class ExpressAuth extends AuthServer<CookieOptions> {
     );
   }
   /**
+   * Returns the accessToken from headers
+   */
+  public getAccessToken(headers: http.IncomingHttpHeaders) {
+    return this.micro.getAccessToken(headers);
+  }
+  /**
    * Sets the refreshToken as a cookie
    * @param refreshToken sending an empty string will remove the cookie
    */
   public setRefreshToken(res: Response, refreshToken: string) {
-    const cookie = this.micro.getCookieName();
-    const cookieOptions: CookieOptions = this.micro.getCookieOptions(
+    const cookie = this.micro.getRefreshTokenName();
+    const cookieOptions: CookieOptions = this.micro.getRefreshTokenOptions(
       refreshToken
     );
 
@@ -97,5 +97,19 @@ export default class ExpressAuth extends AuthServer<CookieOptions> {
     if (!refreshToken) cookieOptions.signed = false;
 
     res.cookie(cookie, refreshToken, cookieOptions);
+  }
+  /**
+   * Sets the accessToken as a cookie
+   * @param accessToken sending an empty string will remove the cookie
+   */
+  public setAccessToken(res: Response, accessToken: string) {
+    const cookie = this.micro.getAccessTokenName();
+    const cookieOptions: CookieOptions = this.micro.getAccessTokenOptions(
+      accessToken
+    );
+
+    if (!accessToken) cookieOptions.signed = false;
+
+    res.cookie(cookie, accessToken, cookieOptions);
   }
 }
