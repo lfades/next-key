@@ -1,6 +1,6 @@
 {
   "name": "next-key-express",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "jwt auth server for Express",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -44,6 +44,6 @@
     "typescript": "^2.7.2"
   },
   "dependencies": {
-    "next-key-micro": "^1.0.2"
+    "next-key-micro": "^1.0.3"
   }
 }

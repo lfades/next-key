@@ -2,19 +2,24 @@ import cookieParser from 'cookie-parser';
 import express, { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import ExpressAuth, {
-  AuthAccessToken,
-  AuthRefreshToken,
-  Payload,
-  run,
-  Scope
-} from '..';
+import ExpressAuth, { AuthAccessToken, AuthRefreshToken, run, Scope } from '..';
 import {
   AT_COOKIE,
   BAD_REQUEST_MESSAGE,
   BAD_REQUEST_STATUS,
   RT_COOKIE
 } from '../internals';
+
+interface User {
+  id: string;
+  companyId: string;
+}
+
+interface TokenPayload {
+  uId: string;
+  cId: string;
+  scope: string;
+}
 
 describe('Auth with Express', () => {
   const ACCESS_TOKEN_SECRET = 'password';
@@ -23,18 +28,16 @@ describe('Auth with Express', () => {
   const authScope = new Scope({
     admin: 'a'
   });
-  const authPayload = new Payload({
-    uId: 'id',
-    cId: 'companyId',
-    scope: 'scope'
-  });
 
   class AccessToken implements AuthAccessToken {
-    public getPayload({ id, companyId }: { id: string; companyId: string }) {
-      const scope = authScope.create(['admin:read', 'admin:write']);
-      return authPayload.create({ id, companyId, scope });
+    public getPayload({ id, companyId }: User) {
+      return {
+        uId: id,
+        cId: companyId,
+        scope: authScope.create(['admin:read', 'admin:write'])
+      };
     }
-    public create(payload: { uId: string; cId: string; scope: string }) {
+    public create(payload: TokenPayload) {
       return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
         expiresIn: '1m'
       });
@@ -42,12 +45,13 @@ describe('Auth with Express', () => {
     public verify(accessToken: string) {
       const payload = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
         algorithms: ['HS256']
-      }) as object;
-      const parsedPayload = authPayload.parse(payload);
+      }) as TokenPayload;
 
-      parsedPayload.scope = authScope.parse(parsedPayload.scope);
-
-      return parsedPayload;
+      return {
+        id: payload.uId,
+        companyId: payload.cId,
+        scope: authScope.parse(payload.scope)
+      };
     }
   }
 
