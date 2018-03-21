@@ -68,9 +68,12 @@ export interface AuthScope {
   has(scope: string[], perm: string | string[]): boolean;
 }
 
-export interface AuthPayload {
-  create(payload: StringAnyMap): StringAnyMap;
-  parse(reversePayload: StringAnyMap): StringAnyMap;
+export interface AuthPayload<
+  Payload = StringAnyMap,
+  TokenPayload = StringAnyMap
+> {
+  create(payload: StringAnyMap): TokenPayload;
+  parse(reversePayload: StringAnyMap): Payload;
 }
 
 export interface StringStringMap {

@@ -62,6 +62,8 @@ export default class Scope implements AuthScope {
    * Checks whether or not a perm is included in a parsed scope
    */
   public has(scope: string[], perm: string | string[]) {
+    if (!scope.length) return false;
+
     const perms = Array.isArray(perm) ? perm : [perm];
     const withPerm = (p: string) => perms.indexOf(p) !== -1;
 
