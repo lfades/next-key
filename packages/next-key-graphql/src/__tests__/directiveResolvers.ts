@@ -7,7 +7,6 @@ import {
 import {
   ACCESS_TOKEN,
   AccessToken,
-  authScope,
   RefreshToken,
   testRequest,
   validScope
@@ -16,8 +15,7 @@ import {
 describe('@auth directive', () => {
   const auth = new GraphqlAuth({
     accessToken: new AccessToken(),
-    refreshToken: new RefreshToken(),
-    scope: authScope
+    refreshToken: new RefreshToken()
   });
   const LoginRequired = new AuthConnector.errors.LoginRequired();
   const ScopeRequired = new AuthConnector.errors.ScopeRequired();

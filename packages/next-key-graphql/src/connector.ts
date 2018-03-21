@@ -68,15 +68,14 @@ export class AuthConnector {
    * Checks if the user has a certain scope
    */
   public hasScope(scope: string | string[]) {
+    if (!this.auth.accessToken.scope) {
+      throw new Error(
+        'To check for the scope accessToken.scope needs to be defined'
+      );
+    }
     if (!this.user) return false;
-    if (!this.scope) this.scope = this.auth.scope.parse(this.user.scope);
-    if (!this.scope.length) return false;
-    if (!Array.isArray(scope)) scope = [scope];
 
-    const _scope = this.scope;
-    const withPerm = (perm: string) => _scope.includes(perm);
-
-    return !!scope.find(withPerm);
+    return this.auth.accessToken.scope.has(this.user.scope, scope);
   }
   /**
    * Checks if the user has a certain scope and throws an error if he doesn't

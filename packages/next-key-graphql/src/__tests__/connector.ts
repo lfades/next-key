@@ -2,21 +2,17 @@ import { AuthConnector, GraphqlAuth, RequestLike } from '..';
 import {
   ACCESS_TOKEN,
   AccessToken,
-  authPayload,
-  authScope,
   RefreshToken,
   testRequest,
-  tokenPayload,
-  userData,
+  user,
+  userPayload,
   validScope
 } from '../testUtils';
 
 describe('Auth Connector', () => {
   const auth = new GraphqlAuth({
     accessToken: new AccessToken(),
-    refreshToken: new RefreshToken(),
-    scope: authScope,
-    payload: authPayload
+    refreshToken: new RefreshToken()
   });
   const LoginRequired = new AuthConnector.errors.LoginRequired();
   const ScopeRequired = new AuthConnector.errors.ScopeRequired();
@@ -33,7 +29,7 @@ describe('Auth Connector', () => {
     expect.assertions(1);
 
     await testRequest((req: RequestLike, res) => {
-      req.user = tokenPayload;
+      req.user = userPayload;
       const errors = AuthConnector.errors;
       const connector = new AuthConnector({ auth, req, res, errors });
 
@@ -42,7 +38,7 @@ describe('Auth Connector', () => {
         req: expect.anything(),
         res: expect.anything(),
         errors: expect.anything(),
-        user: tokenPayload
+        user: userPayload
       });
     });
   });
@@ -69,31 +65,33 @@ describe('Auth Connector', () => {
     it('Returns the payload', () => {
       const connector = getConnector('Bearer ' + ACCESS_TOKEN);
 
-      expect(connector.getPayload()).toEqual(tokenPayload);
-      expect(connector.user).toEqual(tokenPayload);
+      expect(connector.getPayload()).toEqual(userPayload);
+      expect(connector.user).toEqual(userPayload);
     });
 
     it('Caches the user', () => {
       const connector = getConnector();
 
-      connector.user = tokenPayload;
+      connector.user = userPayload;
 
-      expect(connector.getPayload()).toEqual(tokenPayload);
+      expect(connector.getPayload()).toEqual(userPayload);
     });
   });
 
   describe('hasScope', () => {
-    it('Returns false if user is undefined', () => {
+    it('Throws an error if accessToken.scope is undefined', () => {
       const connector = getConnector();
+      const fn = connector.hasScope.bind(connector, validScope);
 
-      expect(connector.hasScope(validScope)).toBe(false);
+      connector.auth = new GraphqlAuth({
+        accessToken: Object.assign(new AccessToken(), { scope: undefined })
+      });
+
+      expect(fn).toThrowError();
     });
 
-    it('Returns false if the user scope is empty', () => {
+    it('Returns false if user is undefined', () => {
       const connector = getConnector();
-
-      connector.user = tokenPayload;
-      connector.scope = [];
 
       expect(connector.hasScope(validScope)).toBe(false);
     });
@@ -119,12 +117,11 @@ describe('Auth Connector', () => {
       expect(fn).toThrowError(LoginRequired);
     });
 
-    it('Throws an error if user is undefined', () => {
+    it('Throws an error if the user does not have the requested scope', () => {
       const connector = getConnector();
-      const fn = connector.checkScope.bind(connector, validScope);
+      const fn = connector.checkScope.bind(connector, 'xxx');
 
-      connector.user = tokenPayload;
-      connector.scope = [];
+      connector.user = userPayload;
 
       expect(fn).toThrowError(ScopeRequired);
     });
@@ -132,7 +129,7 @@ describe('Auth Connector', () => {
     it('Returns undefined if the user has the requested scope', () => {
       const connector = getConnector();
 
-      connector.user = tokenPayload;
+      connector.user = userPayload;
 
       expect(connector.checkScope(validScope)).toBeUndefined();
     });
@@ -141,7 +138,7 @@ describe('Auth Connector', () => {
   it('Updates the user', () => {
     const connector = getConnector();
 
-    connector.user = tokenPayload;
+    connector.user = userPayload;
     connector.scope = validScope;
     connector.updateUser({ name: 'Luis' });
 
@@ -159,14 +156,14 @@ describe('Auth Connector', () => {
     it('Returns the user', () => {
       const connector = getConnector('Bearer ' + ACCESS_TOKEN);
 
-      expect(connector.getUser()).toEqual(tokenPayload);
+      expect(connector.getUser()).toEqual(userPayload);
     });
   });
 
   it('Returns the userId', () => {
     const connector = getConnector('Bearer ' + ACCESS_TOKEN);
 
-    expect(connector.userId()).toBe(tokenPayload.id);
+    expect(connector.userId()).toBe(userPayload.id);
   });
 
   describe('logout', () => {
@@ -179,7 +176,7 @@ describe('Auth Connector', () => {
     it('Logouts the user', async () => {
       expect.assertions(1);
 
-      const refreshToken = await auth.createRefreshToken(userData);
+      const refreshToken = await auth.createRefreshToken(user);
       const cookie = auth.serializeRefreshToken(refreshToken);
 
       await testRequest(async (req, res) => {
@@ -200,7 +197,7 @@ describe('Auth Connector', () => {
     it('Refreshes the accessToken', async () => {
       expect.assertions(1);
 
-      const refreshToken = await auth.createRefreshToken(userData);
+      const refreshToken = await auth.createRefreshToken(user);
       const cookie = auth.serializeRefreshToken(refreshToken);
 
       await testRequest(async (req, res) => {

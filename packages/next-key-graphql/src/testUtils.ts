@@ -5,14 +5,19 @@
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import { RequestHandler } from 'micro';
-import {
-  AuthAccessToken,
-  AuthRefreshToken,
-  Payload,
-  run,
-  Scope
-} from 'next-key-micro';
+import { AuthAccessToken, AuthRefreshToken, run, Scope } from 'next-key-micro';
 import request from 'supertest';
+
+export interface User {
+  id: string;
+  companyId: string;
+}
+
+export interface TokenPayload {
+  uId: string;
+  cId: string;
+  scope: string;
+}
 
 export const REFRESH_TOKEN_COOKIE = 'abc';
 
@@ -28,21 +33,15 @@ export const authScope = new Scope({
   admin: 'a'
 });
 
-export const authPayload = new Payload({
-  uId: 'id',
-  cId: 'companyId',
-  scope: 'scope'
-});
-
-export const userData = {
+export const user = {
   id: 'user_123',
   companyId: 'company_123'
 };
 
-export const tokenPayload = {
-  id: userData.id,
-  companyId: userData.companyId,
-  scope: 'a:r:w'
+export const userPayload = {
+  id: user.id,
+  companyId: user.companyId,
+  scope: ['admin:read', 'admin:write']
 };
 // this is the scope created by authScope after parsing 'a:r:w'
 export const validScope = ['admin:read', 'admin:write'];
@@ -84,18 +83,28 @@ export class RefreshToken implements AuthRefreshToken {
 }
 
 export class AccessToken implements AuthAccessToken {
-  public getPayload({ id, companyId }: { id: string; companyId: string }) {
-    const scope = authScope.create(['admin:read', 'admin:write']);
-    return { id, companyId, scope };
+  public scope = authScope;
+  public getPayload({ id, companyId }: User) {
+    return {
+      uId: id,
+      cId: companyId,
+      scope: authScope.create(['admin:read', 'admin:write'])
+    };
   }
-  public create(payload: { uId: string; cId: string; scope: string }) {
+  public create(payload: TokenPayload) {
     return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
       expiresIn: '1m'
     });
   }
   public verify(accessToken: string) {
-    return jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
+    const payload = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
       algorithms: ['HS256']
-    }) as object;
+    }) as TokenPayload;
+
+    return {
+      id: payload.uId,
+      companyId: payload.cId,
+      scope: authScope.parse(payload.scope)
+    };
   }
 }
