@@ -31,7 +31,6 @@ describe('Auth Server', () => {
   });
 
   class AccessToken implements AuthAccessToken {
-    public scope = authScope;
     public getPayload({ id, companyId }: { id: string; companyId: string }) {
       const scope = authScope.create(['admin:read', 'admin:write']);
 
@@ -79,9 +78,7 @@ describe('Auth Server', () => {
     refreshToken: new RefreshToken()
   });
   const authBasic = new AuthServer({
-    accessToken: Object.assign(new AccessToken(), {
-      scope: undefined
-    })
+    accessToken: new AccessToken()
   });
 
   // Payload to create a token

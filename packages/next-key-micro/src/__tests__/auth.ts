@@ -22,6 +22,14 @@ describe('Auth with Micro', () => {
   const REFRESH_TOKEN_COOKIE = 'aei';
   const ACCESS_TOKEN_COOKIE = 'abc';
   const refreshTokens = new Map();
+  const authScope = new Scope({
+    admin: 'a'
+  });
+  const authPayload = new Payload({
+    uId: 'id',
+    cId: 'companyId',
+    scope: 'scope'
+  });
 
   class AccessToken implements AuthAccessToken {
     public cookie = ACCESS_TOKEN_COOKIE;
@@ -32,7 +40,7 @@ describe('Auth with Micro', () => {
     }
     public getPayload({ id, companyId }: { id: string; companyId: string }) {
       const scope = authScope.create(['admin:read', 'admin:write']);
-      return { id, companyId, scope };
+      return authPayload.create({ id, companyId, scope });
     }
     public create(payload: { uId: string; cId: string; scope: string }) {
       return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
@@ -40,9 +48,14 @@ describe('Auth with Micro', () => {
       });
     }
     public verify(accessToken: string) {
-      return jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
+      const payload = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
         algorithms: ['HS256']
       }) as object;
+      const parsedPayload = authPayload.parse(payload);
+
+      parsedPayload.scope = authScope.parse(parsedPayload.scope);
+
+      return parsedPayload;
     }
   }
 
@@ -71,24 +84,19 @@ describe('Auth with Micro', () => {
     }
   }
 
-  const authScope = new Scope({
-    admin: 'a'
-  });
-
   const authServer = new MicroAuth({
     refreshToken: new RefreshToken(),
-    accessToken: new AccessToken(),
-    payload: new Payload({
-      uId: 'id',
-      cId: 'companyId',
-      scope: 'scope'
-    }),
-    scope: authScope
+    accessToken: new AccessToken()
   });
 
-  const userPayload = {
+  const user = {
     id: 'user_123',
     companyId: 'company_123'
+  };
+  const userPayload = {
+    id: user.id,
+    companyId: user.companyId,
+    scope: ['admin:read', 'admin:write']
   };
 
   let rtCookieStr: string;
@@ -111,7 +119,7 @@ describe('Auth with Micro', () => {
   };
 
   const initData = async () => {
-    data = await authServer.createTokens(userPayload);
+    data = await authServer.createTokens(user);
     rtCookieStr = authServer.serializeRefreshToken(data.refreshToken);
     atCookieStr = authServer.serializeAccessToken(data.accessToken);
   };
@@ -175,7 +183,7 @@ describe('Auth with Micro', () => {
 
       await testRequest(
         authServer.authorize(req => {
-          expect(req.user).toEqual(data.payload);
+          expect(req.user).toEqual(userPayload);
         })
       ).set('Authorization', 'Bearer ' + data.accessToken);
     });
