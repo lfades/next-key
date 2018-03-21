@@ -16,10 +16,16 @@ export default class Payload implements AuthPayload {
     this.PAYLOAD = Object.entries(payload);
     this.REVERSE_PAYLOAD = this.PAYLOAD.map(([pk, k]): PayloadEntry => [k, pk]);
   }
+  public create(payload: StringAnyMap) {
+    return this.reverse(this.REVERSE_PAYLOAD, payload);
+  }
+  public parse(payload: StringAnyMap) {
+    return this.reverse(this.PAYLOAD, payload);
+  }
   /**
    * Replaces the keys of a payload
    */
-  public reverse(keys: PayloadEntry[], payload: StringAnyMap): StringAnyMap {
+  private reverse(keys: PayloadEntry[], payload: StringAnyMap): StringAnyMap {
     if (!keys.length) return payload;
 
     return keys.reduce((p: StringAnyMap, [k, pk]) => {
@@ -29,11 +35,5 @@ export default class Payload implements AuthPayload {
 
       return p;
     }, {});
-  }
-  public create(payload: StringAnyMap) {
-    return this.reverse(this.REVERSE_PAYLOAD, payload);
-  }
-  public parse(payload: StringAnyMap) {
-    return this.reverse(this.PAYLOAD, payload);
   }
 }
