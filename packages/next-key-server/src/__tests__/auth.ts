@@ -21,21 +21,21 @@ describe('Auth Server', () => {
   const expiredToken =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1SWQiOiJ1c2VyXzEyMyIsImNJZCI6ImNvbXBhbnlfMTIzIiwic2NvcGUiOiJhOnI6dyIsImlhdCI6MTUxODE0MTIzNCwiZXhwIjoxNTE4MTQyNDM0fQ.3ZRmx08htMX5KLsv8VhBVD8vjxHzWOiDDli7JXFf83Q';
   const refreshTokens = new Map();
+  const authScope = new Scope({
+    admin: 'a'
+  });
+  const authPayload = new Payload({
+    uId: 'id',
+    cId: 'companyId',
+    scope: 'scope'
+  });
 
   class AccessToken implements AuthAccessToken {
-    public getPayload({
-      id,
-      companyId,
-      admin
-    }: {
-      id: string;
-      companyId: string;
-      admin: boolean;
-    }) {
-      const scope = admin
-        ? authScope.create(['admin:read', 'admin:write'])
-        : '';
-      return { id, companyId, scope };
+    public scope = authScope;
+    public getPayload({ id, companyId }: { id: string; companyId: string }) {
+      const scope = authScope.create(['admin:read', 'admin:write']);
+
+      return authPayload.create({ id, companyId, scope });
     }
     public create(payload: { uId: string; cId: string; scope: string }) {
       return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
@@ -43,9 +43,14 @@ describe('Auth Server', () => {
       });
     }
     public verify(accessToken: string) {
-      return jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
+      const payload = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
         algorithms: ['HS256']
       }) as object;
+      const parsedPayload = authPayload.parse(payload);
+
+      parsedPayload.scope = authScope.parse(parsedPayload.scope);
+
+      return parsedPayload;
     }
   }
 
@@ -69,49 +74,41 @@ describe('Auth Server', () => {
     }
   }
 
-  const authPayload = new Payload({
-    uId: 'id',
-    cId: 'companyId',
-    scope: 'scope'
-  });
-
-  const authScope = new Scope({
-    admin: 'a'
-  });
-
   const authServer = new AuthServer({
     accessToken: new AccessToken(),
-    refreshToken: new RefreshToken(),
-    payload: authPayload,
-    scope: authScope
+    refreshToken: new RefreshToken()
   });
-  const authBasic = new AuthServer({ accessToken: new AccessToken() });
+  const authBasic = new AuthServer({
+    accessToken: Object.assign(new AccessToken(), {
+      scope: undefined
+    })
+  });
 
   // Payload to create a token
-  const userPayload = {
+  const user = {
     id: 'user_123',
-    companyId: 'company_123',
-    admin: true
+    companyId: 'company_123'
+  };
+
+  const userPayload = {
+    id: user.id,
+    companyId: user.companyId,
+    scope: ['admin:read', 'admin:write']
   };
 
   // Payload got from a token
   const tokenPayload = {
-    id: userPayload.id,
-    companyId: userPayload.companyId,
+    uId: userPayload.id,
+    cId: userPayload.companyId,
     scope: 'a:r:w'
   };
-
-  it('should set a default scope and payload', () => {
-    expect(authBasic.scope).toBeInstanceOf(Scope);
-    expect(authBasic.payload).toBeInstanceOf(Payload);
-  });
 
   describe('Create accessToken', () => {
     it('Throws an error if accessToken.create is undefined', () => {
       const auth = new AuthServer({
         accessToken: Object.assign(new AccessToken(), { create: undefined })
       });
-      expect(auth.createAccessToken.bind(auth, userPayload)).toThrowError(
+      expect(auth.createAccessToken.bind(auth, user)).toThrowError(
         MISSING_AT_CREATE_MSG
       );
     });
@@ -120,14 +117,14 @@ describe('Auth Server', () => {
       const auth = new AuthServer({
         accessToken: Object.assign(new AccessToken(), { getPayload: undefined })
       });
-      expect(auth.createAccessToken(userPayload)).toEqual({
+      expect(auth.createAccessToken(user)).toEqual({
         accessToken: expect.any(String),
-        payload: userPayload
+        payload: user
       });
     });
 
     it('Creates the token', () => {
-      expect(authServer.createAccessToken(userPayload)).toEqual({
+      expect(authServer.createAccessToken(user)).toEqual({
         accessToken: expect.any(String),
         payload: tokenPayload
       });
@@ -138,16 +135,14 @@ describe('Auth Server', () => {
     it('Throws an error if refreshToken is undefined', async () => {
       expect.assertions(1);
       try {
-        await authBasic.createRefreshToken(userPayload);
+        await authBasic.createRefreshToken(user);
       } catch (e) {
         expect(e.message).toBe(MISSING_RT_MSG);
       }
     });
 
     it('Creates the token', async () => {
-      expect(typeof await authServer.createRefreshToken(userPayload)).toBe(
-        'string'
-      );
+      expect(typeof await authServer.createRefreshToken(user)).toBe('string');
     });
   });
 
@@ -155,14 +150,14 @@ describe('Auth Server', () => {
     it('Throws an error if refreshToken is undefined', async () => {
       expect.assertions(1);
       try {
-        await authBasic.createTokens(userPayload);
+        await authBasic.createTokens(user);
       } catch (e) {
         expect(e.message).toBe(MISSING_RT_MSG);
       }
     });
 
     it('Creates the tokens', async () => {
-      expect(await authServer.createTokens(userPayload)).toEqual({
+      expect(await authServer.createTokens(user)).toEqual({
         refreshToken: expect.any(String),
         accessToken: expect.any(String),
         payload: tokenPayload
@@ -184,8 +179,8 @@ describe('Auth Server', () => {
     });
 
     it('Returns the payload', () => {
-      const { accessToken } = authServer.createAccessToken(userPayload);
-      expect(authServer.verify(accessToken)).toEqual(tokenPayload);
+      const { accessToken } = authServer.createAccessToken(user);
+      expect(authServer.verify(accessToken)).toEqual(userPayload);
     });
   });
 
@@ -204,10 +199,10 @@ describe('Auth Server', () => {
     });
 
     it('Returns the payload', async () => {
-      const refreshToken = await authServer.createRefreshToken(userPayload);
+      const refreshToken = await authServer.createRefreshToken(user);
 
       expect(await authServer.getPayload(refreshToken, reset)).toEqual({
-        userId: userPayload.id,
+        userId: user.id,
         expireAt: refreshTokens.get(refreshToken).expireAt
       });
     });
@@ -221,7 +216,7 @@ describe('Auth Server', () => {
     });
 
     it('Removes the token', async () => {
-      const refreshToken = await authServer.createRefreshToken(userPayload);
+      const refreshToken = await authServer.createRefreshToken(user);
 
       expect(authServer.removeRefreshRoken(refreshToken)).toBe(true);
       expect(authServer.removeRefreshRoken(refreshToken)).toBe(false);

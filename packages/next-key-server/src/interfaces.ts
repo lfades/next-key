@@ -1,8 +1,6 @@
 export interface AuthServerOptions<CookieOptions = StringAnyMap> {
   accessToken: AuthAccessToken<CookieOptions>;
   refreshToken?: AuthRefreshToken<CookieOptions>;
-  payload?: AuthPayload;
-  scope?: AuthScope;
 }
 
 export interface AuthAccessToken<CookieOptions = StringAnyMap> {
@@ -16,6 +14,10 @@ export interface AuthAccessToken<CookieOptions = StringAnyMap> {
    * @param accessToken will be an empty string when removing the cookie
    */
   cookieOptions?: CookieOptions | ((accessToken: string) => CookieOptions);
+  /**
+   * Scope that will be used by the accessToken
+   */
+  scope?: AuthScope;
   /**
    * Creates a payload based in some data
    */

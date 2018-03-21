@@ -1,8 +1,6 @@
 import {
   AuthAccessToken,
-  AuthPayload,
   AuthRefreshToken,
-  AuthScope,
   AuthServerOptions,
   StringAnyMap
 } from './interfaces';
@@ -11,26 +9,14 @@ import {
   MISSING_AT_VERIFY_MSG,
   MISSING_RT_MSG
 } from './internals';
-import Payload from './payload';
-import Scope from './scope';
 
 export default class AuthServer<CookieOptions = StringAnyMap> {
   public accessToken: AuthAccessToken<CookieOptions>;
   public refreshToken?: AuthRefreshToken<CookieOptions>;
-  public payload: AuthPayload;
-  public scope: AuthScope;
 
-  constructor({
-    accessToken,
-    refreshToken,
-    payload,
-    scope
-  }: AuthServerOptions<CookieOptions>) {
+  constructor({ accessToken, refreshToken }: AuthServerOptions<CookieOptions>) {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
-
-    this.payload = payload || new Payload();
-    this.scope = scope || new Scope();
   }
   /**
    * Creates a new accessToken
@@ -45,7 +31,7 @@ export default class AuthServer<CookieOptions = StringAnyMap> {
       : data;
 
     return {
-      accessToken: this.accessToken.create(this.payload.create(payload)),
+      accessToken: this.accessToken.create(payload),
       payload
     };
   }
@@ -80,15 +66,11 @@ export default class AuthServer<CookieOptions = StringAnyMap> {
     }
     if (!accessToken) return null;
 
-    let tokenPayload: StringAnyMap;
-
     try {
-      tokenPayload = this.accessToken.verify(accessToken);
+      return this.accessToken.verify(accessToken);
     } catch (error) {
       return null;
     }
-
-    return this.payload.parse(tokenPayload);
   }
   /**
    * Returns the payload in a refreshToken that can be used to create an

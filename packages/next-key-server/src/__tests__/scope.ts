@@ -1,6 +1,7 @@
 import { Scope } from '../';
 
 describe('Auth Scope', () => {
+  const basicScope = new Scope();
   const scope = new Scope({
     read: 'r',
     write: 'w',
@@ -25,6 +26,7 @@ describe('Auth Scope', () => {
   const validScope = ['admin:read', 'admin:write'];
 
   it('Creates a valid scope', () => {
+    expect(basicScope.create(['a:read'])).toBe('a:r');
     expect(scope.create([])).toBe('');
     expect(scope.create(scopeArr)).toBe(scopeStr);
     // This is a scope with some permissions mixed, but it should work too
@@ -41,6 +43,7 @@ describe('Auth Scope', () => {
   });
 
   it('Parses a scope', () => {
+    expect(basicScope.parse('a:w')).toEqual(['a:write']);
     expect(scope.parse('')).toEqual([]);
     expect(scope.parse('invalidstring')).toEqual([]);
     expect(scope.parse('invalid|string')).toEqual([]);
