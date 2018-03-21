@@ -1,6 +1,6 @@
 {
   "name": "next-key-micro",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "next-key server for Micro",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -45,6 +45,6 @@
     "@types/node": "^9.4.7",
     "cookie": "^0.3.1",
     "micro": "^9.1.4",
-    "next-key-server": "^1.1.6"
+    "next-key-server": "^1.2.0"
   }
 }
