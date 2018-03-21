@@ -20,11 +20,19 @@ describe('Auth with Express', () => {
   const ACCESS_TOKEN_SECRET = 'password';
   const COOKIE_PARSER_SECRET = 'secret';
   const refreshTokens = new Map();
+  const authScope = new Scope({
+    admin: 'a'
+  });
+  const authPayload = new Payload({
+    uId: 'id',
+    cId: 'companyId',
+    scope: 'scope'
+  });
 
   class AccessToken implements AuthAccessToken {
     public getPayload({ id, companyId }: { id: string; companyId: string }) {
       const scope = authScope.create(['admin:read', 'admin:write']);
-      return { id, companyId, scope };
+      return authPayload.create({ id, companyId, scope });
     }
     public create(payload: { uId: string; cId: string; scope: string }) {
       return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
@@ -32,9 +40,14 @@ describe('Auth with Express', () => {
       });
     }
     public verify(accessToken: string) {
-      return jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
+      const payload = jwt.verify(accessToken, ACCESS_TOKEN_SECRET, {
         algorithms: ['HS256']
       }) as object;
+      const parsedPayload = authPayload.parse(payload);
+
+      parsedPayload.scope = authScope.parse(parsedPayload.scope);
+
+      return parsedPayload;
     }
   }
 
@@ -63,24 +76,19 @@ describe('Auth with Express', () => {
     }
   }
 
-  const authScope = new Scope({
-    admin: 'a'
-  });
-
   const authServer = new ExpressAuth({
     refreshToken: new RefreshToken(),
-    accessToken: new AccessToken(),
-    payload: new Payload({
-      uId: 'id',
-      cId: 'companyId',
-      scope: 'scope'
-    }),
-    scope: authScope
+    accessToken: new AccessToken()
   });
 
-  const userPayload = {
+  const user = {
     id: 'user_123',
     companyId: 'company_123'
+  };
+  const userPayload = {
+    id: user.id,
+    companyId: user.companyId,
+    scope: ['admin:read', 'admin:write']
   };
 
   let cookieStr: string;
@@ -117,7 +125,7 @@ describe('Auth with Express', () => {
     });
   };
   const initData = async () => {
-    data = await authServer.createTokens(userPayload);
+    data = await authServer.createTokens(user);
     await initCookieStr();
   };
 
@@ -243,7 +251,7 @@ describe('Auth with Express', () => {
       expect.assertions(1);
 
       await testRequest(authServer.authorize, req => {
-        expect(req.user).toEqual(data.payload);
+        expect(req.user).toEqual(userPayload);
       }).set('Authorization', 'Bearer ' + data.accessToken);
     });
 
