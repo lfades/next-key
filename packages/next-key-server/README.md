@@ -16,9 +16,9 @@ npm install next-key-server
 Create a new instance of the authentication server
 
 ```js
-import { AuthServer } from 'next-key-client'
+import { AuthServer } from 'next-key-server'
 // this works too
-// import AuthServer from 'next-key-client'
+// import AuthServer from 'next-key-server'
 
 const AuthServer = new AuthServer({ ... })
 ```
@@ -166,11 +166,11 @@ createAccessToken(data: { [key: string]: any }): {
 
 #### `createRefreshToken(data): Promise<string>`
 
-Creates a new `refreshToken`, it returns a Promise that resolvers with the refreshToken
+Creates a new `refreshToken`, it returns a Promise that resolves with the refreshToken
 
 #### `createTokens(data)`
 
-Creates both accessToken and refreshToken, it returns a Promise that resolves with the tokens in an object
+Creates both `accessToken` and `refreshToken`, it returns a Promise that resolves with the tokens in an object
 
 ```ts
 createTokens(data: { [key: string]: any }): Promise<{
@@ -189,5 +189,42 @@ Decodes and returns the payload of an accessToken
 Removes an active refreshToken
 
 ### `Payload`
+
+#### `constructor(payload: { [key: string]: string }): AuthPayload`
+
+Aims to rename the keys of an `accessToken` payload, useful for example if you want to have shorter keys in the payload.
+
+`payload` receives an object where the `key` is the key you want to have and the `value` is the actual key
+
+```js
+import { Payload } from 'next-key-server'
+
+const userPayload = {
+  id: 'user_123',
+  companyId: 'company_123',
+  scope: 'a:r:w',
+  name: 'Luis'
+}
+
+const tokenPayload = {
+  uId: 'user_123',
+  cId: 'company_123',
+  scope: 'a:r:w'
+}
+
+const payload = new Payload({
+  uId: 'id',
+  cId: 'companyId',
+  scope: 'scope'
+})
+
+payload.create(userPayload) // -> tokenPayload
+
+payload.parse(tokenPayload) // -> userPayload without 'name'
+```
+
+> Keys not defined in `payload` will be excluded after `create()`
+
+> `AuthServer` will use `create()` and `parse()` for you
 
 ### `Scope`
