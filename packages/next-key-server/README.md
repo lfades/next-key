@@ -43,6 +43,15 @@ accessToken: AuthAccessToken<CookieOptions>
 
 `AuthAccessToken<CookieOptions>` is an interface defined [here](https://github.com/lfades/next-key/blob/master/packages/next-key-server/src/interfaces.ts#L8) and accepts the following fields:
 
+##### accessToken.scope
+
+Manages an scope for the `accessToken`, this is only required when using
+`next-key-graphql`, to see how it works look at `Scope`
+
+```ts
+scope?: AuthScope
+```
+
 ##### accessToken.cookie
 
 Name of the cookie for the `accessToken`, only used by http implementations of this package
@@ -129,26 +138,6 @@ Removes a refreshToken
 remove(refreshToken: string): Promise<boolean> | boolean
 ```
 
-#### payload
-
-`default:` `new Payload()`
-
-This allows you to modify the payload before saving it to the `accessToken` and parse it back too. The default behaviour will leave the payload as it is, look at `Payload` to see what can you do with it
-
-```ts
-payload?: AuthPayload = new Payload()
-```
-
-#### scope
-
-`default:` `new Scope()`
-
-Manages a scope for the `accessToken`, to see how it works look at `Scope`
-
-```ts
-scope?: AuthScope = new Scope()
-```
-
 ---
 
 After creating an instance of `AuthServer` the following methods are available
@@ -188,43 +177,58 @@ Decodes and returns the payload of an accessToken
 
 Removes an active refreshToken
 
-### `Payload`
+### `Scope`
 
-#### `constructor(payload: { [key: string]: string }): AuthPayload`
+#### `constructor(scope: { [key: string]: string }): AuthScope`
 
-Aims to rename the keys of an `accessToken` payload, useful for example if you want to have shorter keys in the payload.
+Manages a scope that can be used inside an `accessToken`, it aims to group multiple permissions in a tiny string
 
-`payload` receives an object where the `key` is the key you want to have and the `value` is the actual key
+the param `scope` is an object where every `value` is the shortened version of its `key`, by default it includes the following: `{ read: 'r', write: 'w' }`
 
 ```js
-import { Payload } from 'next-key-server'
-
-const userPayload = {
-  id: 'user_123',
-  companyId: 'company_123',
-  scope: 'a:r:w',
-  name: 'Luis'
-}
-
-const tokenPayload = {
-  uId: 'user_123',
-  cId: 'company_123',
-  scope: 'a:r:w'
-}
-
-const payload = new Payload({
-  uId: 'id',
-  cId: 'companyId',
-  scope: 'scope'
+const scope = new Scope({
+  admin: 'a'
 })
 
-payload.create(userPayload) // -> tokenPayload
+scope.create(['admin:read', 'admin:write']) // -> 'a:r:w'
+scope.create(['admin:read:write']) // -> 'a:r:w'
 
-payload.parse(tokenPayload) // -> userPayload without 'name'
+scope.parse('a:r:w') // -> ['admin:read', 'admin:write']
+
+scope.has(['admin:read', 'admin:write'], 'admin:read') // -> true
+scope.has(['admin:read', 'admin:write'], ['xxx', 'admin:write']) // -> true
+scope.has(['admin:read', 'admin:write'], 'xxx') // -> false
 ```
 
-> Keys not defined in `payload` will be excluded after `create()`
+Inside `accessToken` it may look like this
 
-> `AuthServer` will use `create()` and `parse()` for you
+```js
+import { AuthServer, Scope } from 'next-key-server'
 
-### `Scope`
+const secret = 'xxx'
+
+const scope = new Scope({
+  admin: 'a'
+})
+
+const AuthServer = new AuthServer({
+  accessToken: {
+    getPayload(data) {
+      return {
+        ...data,
+        scope: scope.create(['admin:read', 'admin:write'])
+      };
+    }
+    create(payload) {
+      return jwt.sign(payload, secret)
+    },
+    verify(accessToken) {
+      const payload = jwt.verify(accessToken, secret, {
+        algorithms: ['HS256']
+      })
+      payload.scope = scope.parse(payload.scope)
+      return payload
+    }
+  }
+})
+```

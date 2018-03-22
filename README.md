@@ -101,7 +101,7 @@ const secret = 'xxx'
 const refreshTokens = new Map() // use a database/redis/etc here
 const authServer = new ExpressAuth({
   accessToken: {
-    create(data) {
+    create(payload) {
       return jwt.sign(payload, secret)
     },
     verify(accessToken) {
