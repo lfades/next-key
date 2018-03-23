@@ -46,7 +46,7 @@ accessToken: AuthAccessToken<CookieOptions>
 ##### accessToken.scope
 
 Manages an scope for the `accessToken`, this is only required when using
-`next-key-graphql`, to see how it works look at `Scope`
+[next-key-graphql](https://github.com/lfades/next-key/tree/master/packages/next-key-graphql), to see how it works look at [Scope](#Scope)
 
 ```ts
 scope?: AuthScope
