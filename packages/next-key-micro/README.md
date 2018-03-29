@@ -68,3 +68,19 @@ module.exports = (req, res) => {
 ```ts
 { headers: { authorization: 'xxx' } }
 ```
+
+#### `getRefeshToken(headers)`
+
+Returns the refreshToken from cookies or `null`
+
+#### `getAccessToken(headers)`
+
+Returns the accessToken from headers or `null`
+
+#### `setRefreshToken(res, refreshToken)`
+
+Sets a `refreshToken` as a cookie, `res` is an http response and `refreshToken` the token string that will be set
+
+#### `setAccessToken(res, accessToken)`
+
+Sets an `accessToken` as a cookie, `res` is an http response and `accessToken` the token string that will be set
