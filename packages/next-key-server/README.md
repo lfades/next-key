@@ -2,8 +2,8 @@
 
 Handles authentication in the server, you usually don't need to use this package directly, instead choose an http implementation of this package
 
-* next-key-micro: Handles authentication for Micro.js, Micro is almost the same as a basic http server
-* next-key-express: Handles authentication for Express
+* [next-key-micro](https://github.com/lfades/next-key/tree/master/packages/next-key-micro): Handles authentication for Micro.js, Micro is almost the same as a basic http server
+* [next-key-express](https://github.com/lfades/next-key/tree/master/packages/next-key-express): Handles authentication for Express
 
 ## How to use
 
@@ -20,7 +20,7 @@ import { AuthServer } from 'next-key-server'
 // this works too
 // import AuthServer from 'next-key-server'
 
-const AuthServer = new AuthServer({ ... })
+const authServer = new AuthServer({ ... })
 ```
 
 ## API

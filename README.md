@@ -21,9 +21,9 @@ The docs for every package are inside their own folder instead of here
 
 * [next-key-client](https://github.com/lfades/next-key/tree/master/packages/next-key-client): Handles authentication for the client, supports SSR
 * [next-key-server](https://github.com/lfades/next-key/tree/master/packages/next-key-server): Handles authentication in Node.js
-* next-key-micro: Handles authentication for Micro.js, Micro is almost the same as a basic http server
-* next-key-express: Handles authentication for Express
-* next-key: This one is a HOC for Next.js that implements **next-key-client**
+* [next-key-micro](https://github.com/lfades/next-key/tree/master/packages/next-key-micro): Handles authentication for Micro.js, it can also be used with any http server since Micro.js is a very simple http implementation
+* [next-key-express](https://github.com/lfades/next-key/tree/master/packages/next-key-express): Handles authentication for Express
+* [next-key](https://github.com/lfades/next-key/tree/master/packages/next-key): This one is a HOC for Next.js that implements **next-key-client**
 
 For a basic implementation a refreshToken is not required, in this case we're
 using an accessToken that never expires on a Express server, the accessToken
