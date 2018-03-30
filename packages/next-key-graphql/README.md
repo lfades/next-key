@@ -22,8 +22,7 @@ const schema = makeExecutableSchema({
 })
 ```
 
-The `auth` directive needs to use the `context` for it to work, so the `AuthToken` connector
-should be included too
+The `auth` directive needs to use the `context` for it to work, so `AuthConnector` must be included too
 
 ```js
 import { AuthConnector } from 'next-key-graphql'
@@ -48,7 +47,7 @@ type Query {
 ```
 
 The directive will check for an `accessToken` and do some validations before the
-exceution of the `user` resolver
+excecution of the `user` resolver
 
 ## API
 
@@ -60,7 +59,7 @@ import { AuthConnector, ... } from 'next-key-graphql'
 
 ### `AuthConnector`
 
-Connector to handle authentication inside resolvers for a graphql request, this is required for the use of the `auth` directive and `getAuthSchema`
+Connector to handle authentication inside resolvers for a graphql request, this is required for the use of the `@auth` directive and [getAuthSchema](#getAuthSchema)
 
 #### `constructor(options: AuthConnectorOptions): AuthConnector`
 
@@ -100,7 +99,7 @@ to see all the methods available in `AuthConnector` check the docs in the [sourc
 
 ### `authDirective`
 
-`string` that contains the graphql definition for the [auth directive](https://github.com/lfades/next-key/blob/master/packages/next-key-graphql/graphql/auth.graphql), the following examples will explain how the directive works
+`string` that contains the graphql definition for the [@auth directive](https://github.com/lfades/next-key/blob/master/packages/next-key-graphql/graphql/auth.graphql), the following examples will explain how the directive works
 
 `@auth`: check for an accessToken, will throw an error if it's invalid
 
@@ -110,11 +109,11 @@ to see all the methods available in `AuthConnector` check the docs in the [sourc
 
 ### `authResolver`
 
-resolver for the `auth` directive, it should be used inside `directiveResolvers`
+resolver for the `@auth` directive, it should be used inside `directiveResolvers`
 
 ### `getAuthSchema()`
 
-Creates an executable schema that handles authentication and can be merged with any other schema, it doesn't includes the auth directive but two mutations that will allow you to create a new accessToken and do a logout using graphql
+Creates an executable schema that handles authentication and can be merged with any other schema, it doesn't includes the auth directive but two mutations that will allow you to create a new `accessToken` and do a logout using graphql
 
 ```js
 import { getAuthSchema } from 'next-key-graphql'

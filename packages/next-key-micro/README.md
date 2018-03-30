@@ -26,7 +26,7 @@ const microAuth = new MicroAuth({ ... })
 
 #### `constructor(options: AuthServerOptions<CookieOptions>): MicroAuth`
 
-`AuthServerOptions` are the same options used by [next-key-server](https://github.com/lfades/next-key/tree/master/packages/next-key-server). The cookie options used by this package are the same of [cookie](https://github.com/jshttp/cookie#options-1)
+`AuthServerOptions` are the same options used by [next-key-server](https://github.com/lfades/next-key/tree/master/packages/next-key-server#authserver). The cookie options used by this package are the same of [cookie](https://github.com/jshttp/cookie#options-1)
 
 ---
 
@@ -50,7 +50,7 @@ Http handler that will logout an user by removing his `refreshToken` from cookie
 module.exports = microAuth.logoutHandler
 ```
 
-The response body will be a json with the following shape: `{ done: boolean }`
+The response body will be a json with the following shape: `{ done: boolean }`, [next-key-client](https://github.com/lfades/next-key/tree/master/packages/next-key-client) will handle the response for you
 
 #### `getUser(req)`
 

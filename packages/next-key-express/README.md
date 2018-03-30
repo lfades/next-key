@@ -26,7 +26,7 @@ const expressAuth = new ExpressAuth({ ... })
 
 #### `constructor(options: AuthServerOptions<CookieOptions>): ExpressAuth`
 
-`AuthServerOptions` are the same options used by [next-key-server](https://github.com/lfades/next-key/tree/master/packages/next-key-server). The cookie options used by this package are the same of [express](http://expressjs.com/en/4x/api.html#res.cookie)
+`AuthServerOptions` are the same options used by [next-key-server](https://github.com/lfades/next-key/tree/master/packages/next-key-server#authserver). The cookie options used by this package are the same of [express](http://expressjs.com/en/4x/api.html#res.cookie)
 
 ---
 
@@ -54,7 +54,7 @@ const app = express()
 app.get('/logout', expressAuth.logoutHandler)
 ```
 
-The response body will be a json with the following shape: `{ done: boolean }`
+The response body will be a json with the following shape: `{ done: boolean }`, [next-key-client](https://github.com/lfades/next-key/tree/master/packages/next-key-client) will handle the response for you
 
 #### `authorize`
 

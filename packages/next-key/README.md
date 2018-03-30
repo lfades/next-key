@@ -42,4 +42,4 @@ The HOC will take care of refetching the accessToken for you, it will be availab
 
 ### `AuthClient`
 
-Same `AuthClient` used by [next-key-client](https://github.com/lfades/next-key/tree/master/packages/next-key-client#AuthClient)
+Same `AuthClient` used by [next-key-client](https://github.com/lfades/next-key/tree/master/packages/next-key-client#authclient)
