@@ -1,8 +1,7 @@
-# Revisa el token JWT de autenticación y el scope de ser necesario
+# Checks for authentication
 directive @auth(
-  # En caso de ser true no se lanzara un error si no hay un token de
-  # autorización o no es válido
+  # if true no error will be thrown if there's an error with the accessToken
   required: Boolean,
-  # Revisa que el usuario tenga ciertos permisos
+  # Checks for a specific scope in the accessToken
   scope: [String],
 ) on FIELD_DEFINITION

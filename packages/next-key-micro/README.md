@@ -36,7 +36,7 @@ After creating an instance of `MicroAuth` the following methods are available
 
 Http handler that will create a new `accessToken` using the current `refreshToken` stored in cookies
 
-```ts
+```js
 module.exports = microAuth.refreshAccessTokenHandler
 ```
 
@@ -46,7 +46,7 @@ The response body will be a json with the `accessToken` inside, [next-key-client
 
 Http handler that will logout an user by removing his `refreshToken` from cookies
 
-```ts
+```js
 module.exports = microAuth.logoutHandler
 ```
 
@@ -54,19 +54,13 @@ The response body will be a json with the following shape: `{ done: boolean }`
 
 #### `getUser(req)`
 
-Returns the user payload in an `accessToken` from a request or `null`
+Returns the user payload in an `accessToken` from a request or `null`, the `req` prop can be an http request or an object with headers
 
-```ts
+```js
 module.exports = (req, res) => {
   const user = microAuth.getUser(req)
   if (!user) throw new Error('Unauthorized')
 }
-```
-
-> **Note**: the examples show the usage with Micro.js and the `req` prop can be an http request or an object with headers
-
-```ts
-{ headers: { authorization: 'xxx' } }
 ```
 
 #### `getRefeshToken(headers)`
@@ -84,3 +78,5 @@ Sets a `refreshToken` as a cookie, `res` is an http response and `refreshToken` 
 #### `setAccessToken(res, accessToken)`
 
 Sets an `accessToken` as a cookie, `res` is an http response and `accessToken` the token string that will be set
+
+> **Note**: the examples show the usage with Micro.js
