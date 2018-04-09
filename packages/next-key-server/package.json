@@ -6,7 +6,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "fix": "tslint -p tsconfig.json --fix",
-    "tslint": "tslint -c tslint.json -p tsconfig.json -t codeframe",
+    "tslint": "tslint -c tslint.json -p tsconfig.json -t codeFrame",
     "jest": "jest",
     "watch": "tsc -w",
     "test": "npm run tslint && jest --coverage",
