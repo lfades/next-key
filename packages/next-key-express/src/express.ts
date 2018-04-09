@@ -41,7 +41,11 @@ export default class ExpressAuth extends AuthServer<CookieOptions> {
 
     const reset = () => this.setRefreshToken(res, refreshToken);
     const payload = await this.getPayload(refreshToken, reset);
-    if (!payload) throw new BadRequest();
+    if (!payload) {
+      // Remove the invalid refreshToken
+      this.setRefreshToken(res, '');
+      throw new BadRequest();
+    }
 
     const { accessToken } = this.createAccessToken(payload);
     return { accessToken };
