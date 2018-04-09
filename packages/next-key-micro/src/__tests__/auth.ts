@@ -154,8 +154,11 @@ describe('Auth with Micro', () => {
     });
 
     it('Returns an error on an invalid refreshToken', async () => {
+      const rtCookie = `${REFRESH_TOKEN_COOKIE}=xxx; Path=/; HttpOnly,${REFRESH_TOKEN_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`;
       const response = await req.set('Cookie', `${REFRESH_TOKEN_COOKIE}=xxx;`);
 
+      // The refreshToken cookie will be removed too
+      expect(response.get('SET-COOKIE')).toEqual([rtCookie]);
       expect(response.status).toBe(BAD_REQUEST_STATUS);
       expect(response.text).toBe(BAD_REQUEST_MESSAGE);
     });
