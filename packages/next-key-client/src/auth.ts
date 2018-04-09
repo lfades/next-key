@@ -102,6 +102,7 @@ export class AuthClient {
       const isFetchError = err.name === 'FetchError';
       const isNetworkError = err.name === 'NetworkError';
 
+      // Don't ignore unknown errors
       if (!isFetchError && !isNetworkError) throw err;
       // Ignore errors in the server
       if (req) return;
