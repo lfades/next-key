@@ -222,8 +222,11 @@ describe('Auth with Express', () => {
     });
 
     it('Returns an error on an invalid refreshToken', async () => {
+      const rtCookieStr = `${RT_COOKIE}=s%3Axxx.MT3PTffBZOmeB%2BeQ1wrfLTY4eW3SWUWo0whNfFSDTFM; Path=/; HttpOnly,${RT_COOKIE}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`;
       const response = await req.set('Cookie', `${RT_COOKIE}=xxx;`);
 
+      // The refreshToken cookie will be removed too
+      expect(response.get('Set-Cookie')).toEqual([rtCookieStr]);
       expect(response.status).toBe(BAD_REQUEST_STATUS);
       expect(response.text).toBe(BAD_REQUEST_MESSAGE);
     });
